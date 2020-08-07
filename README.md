@@ -96,6 +96,7 @@ I normally use JIRA for project/task management.  For such a small/brief single-
 5. Implement LOD Tiles enumerator for the ROI; display tiles progressively.
 
 Time permitting:
+
 6. Add tilt (tied to elevation) to the perspective viewer.  Not difficult, but will need to tune the elevation/tilt coupling.
 7. Add interface to toggle or display side-by-side the orthogonal and perspective views.
 8. Implement Most Tiles enumerator; display progressively. Will likely do this for grins at a later date.
