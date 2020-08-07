@@ -17,7 +17,7 @@ Oct-trees are a common method for segmenting 3D data and LOD for a given region 
 4. Develop a prototype viewer to visualize identified tiles for a particular camera zoom, direction, and orientation.
 
 ## Engineering Requirements
-1. This project will not be retrieving/diplaying actual map data, but rather just the tile identifiers required to to retrieve such information.  As such, data source and retrieval methods are not within the scope of this project.
+1. This project will not be retrieving/diplaying actual map data, but rather determine tile identifiers required to to retrieve such information.  As such, data source and retrieval methods are not within the scope of this project.
 2. For a given zoom/direction/orientation, the camera's frustum will be projected onto a ground surface.  Assuming an pyramid volume and linear (rather than spherical) projection, the resulting ground projection will be a quadrilateral.
 3. The quadrilateral polygon (Region of Interest) will be used to cull outside tiles, identify tiles entirely encompassed by the ROI, as well as those overlapping the ROI.
 4. Distance from the camera will be used to identify LOD for the tiles, which will be used for determining resolution/level of the multi-resolution/wavelet data.
@@ -73,9 +73,9 @@ I've briefly investigated existing tech to facilitate this project - and for pro
 That said, I didn't find anything that would easily allow me to get into the guts of the tile determination process - so for this exercise, I've decided to build everything myself.  This will also demonstrate how I technically solve problems.
 
 ### Platform / Language / Frameworks
-Given the brevity of this project, I'm inclined to go with the platforms/languages that I most often work with. For product develoment, I would consider target audience, availability of skilled developers, and speed of development/performance/maintenance.
+Given the brevity of this project, I'm inclined to go with the platforms/languages that I most often work with. For product development, I would consider target audience, availability of skilled developers, and speed/cost of development/performance/maintenance.
 
-While can work on multiple OS platforms, my preferences for this project are:
+While I can work on multiple OS platforms, my preferences for this project are:
 #### Cross-platform WebGL/JavaScript
 It's cross-platform, ubiquitous, and the OpenGL-ES can be reused on Mobile.
 Of the WebGL-based frameworks, I like three.js: it's mature/stable, reasonable footprint, has a built-in scene-graph with oct-tree handling, and allows quick prototyping.  However, the downsides to Three is that it's not portably supported on Mobile, and is fairly painful if you need to do custom shaders.  Furthermore, there's no easy access to it's internal oct-tree tiles, so is of limited benefit for this project.  As such, I'm inclined to go with straight WebGL.
@@ -89,7 +89,7 @@ Of the three, I've decided to go with native WebGL, likely porting some of my C/
 ## Project Management
 I normally use JIRA for project/task management.  For such a small/brief single-developer project, I'll likely just keep it in my head:
 
-1. Calculate a frustum quadrilateral ROI for a specified 3D camera view.
+1. Calculate a frustum ground projection polygon for a specified 3D camera view.
 2. Build an orthogonal viewer with elevational zoom to display frustum polygon and ground grid.
 3. Implement a Least Tiles enumerator for the ROI; cull/display tiles in place of grid.
 4. Build a quick 3D viewer to rotate about vertical axis, pan laterally, and zoom (elevation) that displays determined tiles.
