@@ -112,6 +112,8 @@ While prototyping or in production, I encounter implementation cases that either
 
 * Frustum projection at or above horizon.  When camera attitude angle is higher than 1/2 the vertical field of view, that part of the frustrum projects above the horizon, and does not intersect with the ground. This can be addressed by projecting the side planes of the frustum to identify ground vectors, and terminate at some arbitrary distance (frustum back plane or end extent of map data).  For the purposes of this exercise, I'm limiting attitude to 1/2 vertical FOV below horizon.
 
+* In perspective view, looking straight down results in gimbal lock, when using tilt/yaw/roll.  This is typically resolved by using quaternions.  It can also be resolved by excluding a 90 degree camera attitude.  For now, I'll limit looking straight down, as "near down" is visually indistinguishable.  In any case, it's irrelevant to this project's objective to determine appropriate mapping tiles.  Time permitting, I may swith to using quaternions later.
+
 ### Status
 * I've implemented a test/demo web app that displays a 3D view, an Overhead ortho view, and a Stats display.  The 3D view has controls to translate, rotate about the vertical axis, and tilt downward.  The Overhead view has controls to translate (pan/zoom) over the map, visualizing tiles for a given leve (0-20).  Currently working on the frustum projection; I could use the inverse of the view matrix, but doing it in trig to demonstrate what it's doing.
 
