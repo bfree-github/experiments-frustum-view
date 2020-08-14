@@ -100,3 +100,21 @@ Time permitting:
 6. Add tilt (tied to elevation) to the perspective viewer.  Not difficult, but will need to tune the elevation/tilt coupling.
 7. Add interface to toggle or display side-by-side the orthogonal and perspective views.
 8. Implement Most Tiles enumerator; display progressively. Will likely do this for grins at a later date.
+
+## Implementation
+### Documentation & Testing
+I value documentation and unit tests in production environments - however for research/prototyping, I tend to use minimal in-code documentation.  I usually test via a prototype app that demonstrates intended use-case scenarios.
+
+### Discovery
+While prototyping or in production, I encounter implementation cases that either involve lengthly research/development, involve performance, or raise marketing use-case issues.  I mark them for discussion, so that marketing can evaluate cost/value performance and priority before proceeding.  The following are some issue that I've encountered while working on this project.
+
+* Camera freedom of motion.  For many applications, it's useful to have complete freedom of camera motion: translation, tilt, yaw, and roll.  However, in the use case of maps, camera roll is unlikely to be used, as well as any tilt/attitude above the horizon.  As such, I'm limiting camera motion, excluding roll (always "upright"), and not permitting attitude above horizon.
+
+* Frustum projection at or above horizon.  When camera attitude angle is higher than 1/2 the vertical field of view, that part of the frustrum projects above the horizon, and does not intersect with the ground. This can be addressed by projecting the side planes of the frustum to identify ground vectors, and terminate at some arbitrary distance (frustum back plane or end extent of map data).  For the purposes of this exercise, I'm limiting attitude to 1/2 vertical FOV below horizon.
+
+* In perspective view, looking straight down results in gimbal lock, when using tilt/yaw/roll.  This is typically resolved by using quaternions.  It can also be resolved by excluding a 90 degree camera attitude.  For now, I'll limit looking straight down, as "near down" is visually indistinguishable.  In any case, it's irrelevant to this project's objective to determine appropriate mapping tiles.  Time permitting, I may swith to using quaternions later.
+
+### Status
+* I've implemented a test/demo web app that displays a 3D view, an Overhead ortho view, and a Stats display.  The 3D view has controls to translate, rotate about the vertical axis, and tilt downward.  The Overhead view has controls to translate (pan/zoom) over the map, visualizing tiles for a given leve (0-20).  Currently working on the frustum projection; I could use the inverse of the view matrix, but doing it in trig to demonstrate what it's doing.
+
+* Implemented in static HTML5/JavaScript (no node) and straight WebGL (no frameworks).  I'm using jQuery, and ancient WebGL utility lib, and an old matrix lib (time permitting, I may replace this with my own matrix lib).  I'm using 2D canvas for the Overhead view; WebGL for the 3D view.  The two views and Stats are coupled via the parent app.
