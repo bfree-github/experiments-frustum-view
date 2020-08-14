@@ -16,7 +16,7 @@ var _xPos = 0;
 var _frustum = null;
 
 viewOrtho.init = (parent, canvasID, level) => {
-  console.log("viewOrtho init:", canvasID);
+  //console.log("viewOrtho init:", canvasID);
 
   _parent = parent;
   //console.log("parent ctx:", _parent);
@@ -33,7 +33,7 @@ viewOrtho.init = (parent, canvasID, level) => {
   // Set canvas dim
   _canvas.width = _width;
   _canvas.height = _height;
-  console.log(_canvasID, _width+"x"+_height);
+  //console.log(_canvasID, _width+"x"+_height);
 
   _ctx = _canvas.getContext("2d");
 
@@ -103,18 +103,18 @@ viewOrtho.init = (parent, canvasID, level) => {
     lastTime = now;
 
     var x = e.pageX - startX;
-    _xPos = lastX + x;
-    yRot -= x * moveFactor;
+    //_xPos = lastX + x;
+    //yRot -= x * moveFactor;
 
     var y = e.pageY - startY;
-    _yPos = lastY + y;
-    xRot -= y * moveFactor;
-    xRot %= 360.0;
-    if (Math.abs(xRot) > xRotMax) {
-      xRot = Math.sign(xRot) * xRotMax;
-    }
+    //_yPos = lastY + y;
+    //xRot -= y * moveFactor;
+    //xRot %= 360.0;
+    //if (Math.abs(xRot) > xRotMax) {
+    //  xRot = Math.sign(xRot) * xRotMax;
+    //}
     //console.log("ortho pos:", _xPos+"/"+_yPos);
-    viewOrtho.draw();
+    //viewOrtho.draw();
   }
 
   _canvas.onpointerup = (e) => {

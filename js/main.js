@@ -1,6 +1,6 @@
 /* Copyright 2020 Graphcomp - ALL RIGHTS RESERVED */
 
-console.log("main");
+//console.log("main");
 
 import {viewPersp} from "./viewPersp.js";
 import {viewOrtho} from "./viewOrtho.js";
@@ -20,7 +20,7 @@ $(document).ready(() => {
 });
 
 var init = () => {
-  console.log("main init");
+  //console.log("main init");
 
   ctx.viewOrtho = viewOrtho;
 
@@ -30,7 +30,7 @@ var init = () => {
   }
 
   ctx.viewPerspTrapezoid = (trapezoid) => {
-    console.log("viewPerspTrapezoid");
+    //console.log("viewPerspTrapezoid");
     viewOrtho.setFrustum(trapezoid);
     /*
     domStats.perspFrustum.innerHTML =

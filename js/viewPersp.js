@@ -33,7 +33,7 @@ var _elevationMin = 0.0;
 
 
 viewPersp.init = (parent, canvasID, level) => {
-  console.log("viewPersp init:", canvasID);
+  //console.log("viewPersp init:", canvasID);
 
   _parent = parent;
   //console.log("parent ctx:", _parent);
@@ -50,7 +50,7 @@ viewPersp.init = (parent, canvasID, level) => {
   // Set canvas dim
   _canvas.width = _width;
   _canvas.height = _height;
-  console.log(_canvasID, _width+"x"+_height);
+  //console.log(_canvasID, _width+"x"+_height);
 
   _gl = initGL(_canvas);
   initScene(_gl, _fov);
@@ -113,7 +113,7 @@ viewPersp.draw = () => {
 
 // Initialize WebGL context
 const initGL = (canvas) => {
-  console.log("Initializing WebGL");
+  //console.log("Initializing WebGL");
 
   // Handle lost context
   canvas.addEventListener("webglcontextlost", (evt) => {
@@ -246,7 +246,7 @@ const initGL = (canvas) => {
   {
     gl.viewportWidth = _width;
     gl.viewportHeight = _height;
-    console.log('WebGL initialized');
+    //console.log('WebGL initialized');
   }
   else
   {
@@ -497,29 +497,29 @@ const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
   // Adjust _zPos acceleration curve: fast to slow
   //console.log("zDiff:", _zPosMin, _zPosMax, _zPosDiff);
   const zPos = _zPosMin + _zPosDiff*(1.0-Math.pow(elev, 2.0));
-  console.log("zPos:", _zPos, zPos);
+  //console.log("zPos:", _zPos, zPos);
   _eyePos[2] = zPos;
   _zPos = zPos;
 
   // Adjust ground dist acceleration curve: slow to fast
   const previousDist = dist;
   dist = Math.pow(_distMax*(1.0-elev), 2.0);
-  console.log("elevation:", elev);
-  console.log("dist:", previousDist, dist);
+  //console.log("elevation:", elev);
+  //console.log("dist:", previousDist, dist);
 
   // Get new attitude
   const previousAttitude = attitude;
   attitude = Math.atan2(_zPos, dist);
-  console.log("attitude:", radToDeg(previousAttitude), radToDeg(attitude));
+  //console.log("attitude:", radToDeg(previousAttitude), radToDeg(attitude));
 
-  console.log("orientation:", theta);
+  //console.log("orientation:", theta);
 
   const result = [];
   result[0] = (eyePos[0] + dist * Math.sin(-theta));
   result[1] = (eyePos[1] + dist * Math.cos(-theta));
   result[2] = lookAt[2];
-  console.log("previous elevateLookAt:", _lookAt[0], _lookAt[1], _lookAt[2]);
-  console.log("elevateLookAt:", result[0], result[1], result[2]);
+  //console.log("previous elevateLookAt:", _lookAt[0], _lookAt[1], _lookAt[2]);
+  //console.log("elevateLookAt:", result[0], result[1], result[2]);
 
   return result;
 }
@@ -584,7 +584,7 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   }
 
   const [dist, attitude, orientation, xDiff, yDiff, zDiff] = viewVec;
-  console.log("projectFrustum viewVector:", dist, radToDeg(attitude), radToDeg(orientation));
+  //console.log("projectFrustum viewVector:", dist, radToDeg(attitude), radToDeg(orientation));
 
   const attitudeTop = attitude + yFovRad_2;
   //console.log("top attitude:", radToDeg(attitudeTop));
@@ -595,16 +595,16 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
     return undefined;
   }
   const attitudeBottom = attitude - yFovRad_2;
-  console.log("attitudes:", radToDeg(attitudeTop), radToDeg(attitudeBottom));
+  //console.log("attitudes:", radToDeg(attitudeTop), radToDeg(attitudeBottom));
 
   const height = eyePos[2];
   var topY = height / Math.tan(attitudeTop);
   var bottomY = height / Math.tan(attitudeBottom);
-  console.log("top/bot Y:", topY, bottomY);
+  //console.log("top/bot Y:", topY, bottomY);
 
   const topDist = vec3.length([height, topY, 0]);
   const bottomDist = vec3.length([height, bottomY, 0]);
-  console.log("top/bot dist:", topDist, bottomDist);
+  //console.log("top/bot dist:", topDist, bottomDist);
 
   const m = Math.tan(xFovRad_2);
   const topX = topDist * m;
@@ -625,7 +625,7 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   bottomRight[0] = -_eyePos[0] + bottomX * zCos + bottomY * zSin;
   bottomRight[1] = -_eyePos[1] + bottomX * zSin - bottomY * zCos;
 
-  console.log("projectFrustum:", bottomLeft, bottomRight, topRight, topLeft);
+  //console.log("projectFrustum:", bottomLeft, bottomRight, topRight, topLeft);
   return [bottomLeft, bottomRight, topRight, topLeft];
 }
 
@@ -651,7 +651,7 @@ const drawScene = (gl) =>
   {
     //const attitude = Math.atan2(_eyePos[2], )
     const yDist = _lookAt[1] - _eyePos[1];  // !!!
-    console.log("yDist:", yDist);
+    //console.log("yDist:", yDist);
 
     // General camera view handling
     //console.log("drawScene look out");
@@ -659,8 +659,8 @@ const drawScene = (gl) =>
     mat4.lookAt(_eyePos, _lookAt, _upAxis, mvMatrix);
   }
 
-  console.log("lookAt", _lookAt[0], _lookAt[1], _lookAt[2]);
-  console.log("eyePos", _eyePos[0], _eyePos[1], _eyePos[2]);
+  //console.log("lookAt", _lookAt[0], _lookAt[1], _lookAt[2]);
+  //console.log("eyePos", _eyePos[0], _eyePos[1], _eyePos[2]);
 
   setMatrixUniforms(shaderProgram);
   gl.uniform3f(shaderProgram.colorUniform,1.0,0.0,0.0);
