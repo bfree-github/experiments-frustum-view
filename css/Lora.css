@@ -1,0 +1,83 @@
+/* Variable */
+/*
+@font-face {
+  font-family: 'Lora-Variable';
+  font-style: normal;
+  font-weight: 400 700;
+  src: url(http://graphcomp.net/fonts/Lora/Lora-VariableFont_wght.woff2) format('woff2');
+}
+*/
+
+/* Variable Italic */
+/*
+@font-face {
+  font-family: 'Lora-Variable';
+  font-style: italic;
+  font-weight: 400 700;
+  src: url(http://graphcomp.net/fonts/Lora/Lora-VariableFontItalic_wght.woff2) format('woff2');
+}
+*/
+
+/* Regular */
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  src: url(http://graphcomp.net/fonts/Lora/Lora-Regular.woff2) format('woff2');
+}
+
+/* Regular Italic */
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  src: url(http://graphcomp.net/fonts/Lora/Lora-Italic.woff2) format('woff2');
+}
+
+/* Medium */
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 500;
+  src: url(http://graphcomp.net/fonts/Lora/Lora-Medium.woff2) format('woff2');
+}
+
+/* Medium Italic */
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 500;
+  src: url(http://graphcomp.net/fonts/Lora/Lora-MediumItalic.woff2) format('woff2');
+}
+
+/* SemiBold */
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  src: url(http://graphcomp.net/fonts/Lora/Lora-SemiBold.woff2) format('woff2');
+}
+
+/* SemiBold Italic */
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 600;
+  src: url(http://graphcomp.net/fonts/Lora/Lora-SemiBoldItalic.woff2) format('woff2');
+}
+
+/* Bold */
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  src: url(http://graphcomp.net/fonts/Lora/Lora-Bold.woff2) format('woff2');
+}
+
+/* Bold Italic */
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 700;
+  src: url(http://graphcomp.net/fonts/Lora/Lora-BoldItalic.woff2) format('woff2');
+}

@@ -1,0 +1,79 @@
+/* Light */
+@font-face {
+  font-family: 'OpenSans';
+  font-style: normal;
+  font-weight: 300;
+  src: url(http://graphcomp.net/fonts/OpenSans/OpenSans-Light.woff2) format('woff2');
+}
+
+/* Light Italic */
+@font-face {
+  font-family: 'OpenSans';
+  font-style: italic;
+  font-weight: 300;
+  src: url(http://graphcomp.net/fonts/OpenSans/OpenSans-LightItalic.woff2) format('woff2');
+}
+
+/* Regular */
+@font-face {
+  font-family: 'OpenSans';
+  font-style: normal;
+  font-weight: 400;
+  src: url(http://graphcomp.net/fonts/OpenSans/OpenSans-Regular.woff2) format('woff2');
+}
+
+/* Regular Italic */
+@font-face {
+  font-family: 'OpenSans';
+  font-style: italic;
+  font-weight: 400;
+  src: url(http://graphcomp.net/fonts/OpenSans/OpenSans-Italic.woff2) format('woff2');
+}
+
+/* SemiBold */
+@font-face {
+  font-family: 'OpenSans';
+  font-style: normal;
+  font-weight: 600;
+  src: url(http://graphcomp.net/fonts/OpenSans/OpenSans-SemiBold.woff2) format('woff2');
+}
+
+/* SemiBold Italic */
+@font-face {
+  font-family: 'OpenSans';
+  font-style: italic;
+  font-weight: 600;
+  src: url(http://graphcomp.net/fonts/OpenSans/OpenSans-SemiBoldItalic.woff2) format('woff2');
+}
+
+/* Bold */
+@font-face {
+  font-family: 'OpenSans';
+  font-style: normal;
+  font-weight: 700;
+  src: url(http://graphcomp.net/fonts/OpenSans/OpenSans-Bold.woff2) format('woff2');
+}
+
+/* Bold Italic */
+@font-face {
+  font-family: 'OpenSans';
+  font-style: italic;
+  font-weight: 700;
+  src: url(http://graphcomp.net/fonts/OpenSans/OpenSans-BoldItalic.woff2) format('woff2');
+}
+
+/* ExtraBold */
+@font-face {
+  font-family: 'OpenSans';
+  font-style: normal;
+  font-weight: 800;
+  src: url(http://graphcomp.net/fonts/OpenSans/OpenSans-ExtraBold.woff2) format('woff2');
+}
+
+/* ExtraBold Italic */
+@font-face {
+  font-family: 'OpenSans';
+  font-style: italic;
+  font-weight: 800;
+  src: url(http://graphcomp.net/fonts/OpenSans/OpenSans-ExtraBoldItalic.woff2) format('woff2');
+}
