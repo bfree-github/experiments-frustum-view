@@ -27,7 +27,7 @@ const _zPosDiff = _zPosMax - _zPosMin;
 var _eyePos = [_xPos, _yPos, _zPos];
 var _lookAt = [0, 0, 0];
 var _upAxis = [0, 0, -1];
-var _elevation = 1.0;
+var _elevation = 0.5;
 var _elevationMax = 1.0;
 var _elevationMin = 0.0;
 
@@ -63,6 +63,7 @@ viewPersp.init = (parent, canvasID, level) => {
     const delta = -event.deltaY / ((_parent.isFirefox) ? 12.0 : 400.0);
     //console.log("persp wheel:", delta);
 
+    /*
     _zPos += delta;
     if (_zPos > _zPosMax)
     {
@@ -73,13 +74,14 @@ viewPersp.init = (parent, canvasID, level) => {
       _zPos = _zPosMin;
     }
     _eyePos[2] = _zPos;
+    */
 
-    /*
+    ///*
     const elev = _elevation + delta / 10.0;
     if (elev > _elevationMax)
     {
       // !!! Bug - need to fix before allowing elev == _elevationMax;
-      //_elevation = _elevationMax;
+      _elevation = _elevationMax;
     }
     else if (elev < _elevationMin)
     {
@@ -89,9 +91,9 @@ viewPersp.init = (parent, canvasID, level) => {
     {
       _elevation = elev;
     }
-    _lookAt = elevateLookAt(_eyePos, _lookAt, _zRot, _fov, _elevation);
     console.log("elevation:", _elevation);
-    */
+    _lookAt = elevateLookAt(_eyePos, _lookAt, _zRot, _fov, _elevation);
+    //*/
 
     drawScene(_gl);
   }, {passive: false});
@@ -465,8 +467,10 @@ const viewVector = (eyePos, lookAt) =>
 
 const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
 {
+  /*
   _eyePos[2] = _zPos;
   return _lookAt;
+  */
 
   /*
   // Just change _zPos
@@ -475,6 +479,21 @@ const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
   console.log("persp zPos:", _zPos);
   return _lookAt;
   */
+
+  ///*
+  _zPos = _zPosMin + elev * _zPosDiff
+  if (_zPos > _zPosMax)
+  {
+    _zPos = _zPosMax;
+  }
+  else if (_zPos < _zPosMin)
+  {
+    _zPos = _zPosMin;
+  }
+  _eyePos[2] = _zPos;
+  return _lookAt;
+  //*/
+
 
   const viewVec = viewVector(eyePos, _lookAt);
   let dist, attitude, theta;
