@@ -12,8 +12,6 @@ var _width;
 var _height;
 
 const _fov = 45;
-const _maxLevel = 20;
-var _level = 15;
 var _zRot = 0;
 var _xPos = 0;
 var _yPos = 0;
@@ -21,8 +19,11 @@ var _zPos = -5;
 
 const _distMax = vec3.length([1, 1, 0]);
 const _zPosMax = -0.1; //-_distMax;
-const _zPosMin = -5;
+const _zPosMin = -4.8;
 const _zPosDiff = _zPosMax - _zPosMin;
+
+const _maxLevels = 20;
+var _level = 0;
 
 var _eyePos = [_xPos, _yPos, _zPos];
 var _lookAt = [0, 0, 0];
@@ -77,7 +78,7 @@ viewPersp.init = (parent, canvasID, level) => {
     */
 
     ///*
-    const elev = _elevation + delta / 10.0;
+    const elev = _elevation - delta / 10.0;
     if (elev > _elevationMax)
     {
       // !!! Bug - need to fix before allowing elev == _elevationMax;
@@ -91,7 +92,7 @@ viewPersp.init = (parent, canvasID, level) => {
     {
       _elevation = elev;
     }
-    console.log("elevation:", _elevation);
+    //console.log("elevation:", _elevation);
     _lookAt = elevateLookAt(_eyePos, _lookAt, _zRot, _fov, _elevation);
     //*/
 
@@ -577,13 +578,41 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   const xFovRad_2 = degToRad(xFov) / 2.0;
   const yFovRad_2 = degToRad(yFov) / 2.0;
 
+  // Calc level
+  const zPosThresh = _zPosMin/2.0 - _zPosMax;
+  const zPos = (_zPos < zPosThresh) ? zPosThresh : _zPos;
+  //console.log("zPos:", _zPos, zPos, zPosThresh);
+  console.log("zPos:", zPos);
+  var unitLevel = (1.0 - zPos / _zPosMin) * 2.0 - 1.0;
+  if (unitLevel <= 0)
+  {
+    unitLevel = 0.0;
+  }
+  else if (unitLevel > 1.0)
+  {
+    unitLevel = 1.0;
+  }
+  /*
+  const level = parseInt(_maxLevels * unitLevel);
+  console.log("frustum level:", unitLevel, level);
+  */
+  /*
+  const level = parseInt(_maxLevels * (1.0 - unitLevel));
+  console.log("frustum level:", unitLevel, level);
+  */
+  ///*
+  const logLevel = Math.pow(unitLevel, 4.0);
+  const level = parseInt(_maxLevels * logLevel);
+  console.log("frustum level:", unitLevel, logLevel, level);
+  //*/
+
   // Handle when camera facing straight down
   const viewVec = viewVector(eyePos, lookAt);
   if (!viewVec)
   {
     const height = -eyePos[2];
-    const x0 = height * Math.sin(xFovRad_2);
-    const y0 = height * Math.sin(yFovRad_2);
+    const x0 = height * Math.tan(xFovRad_2);
+    const y0 = height * Math.tan(yFovRad_2);
     const d = vec3.length([x0, y0, 0]);
     const a = Math.atan2(y0, x0) + zRot;
     const x = _eyePos[0] + d * Math.cos(a); // !!!
@@ -598,10 +627,9 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
     bottomRight[0] = lookAt[0] - y;
     bottomRight[1] = lookAt[1] + x;
 
-    //console.log("projectFrustum down:", bottomLeft, bottomRight, topRight, topLeft);
-    return [bottomLeft, bottomRight, topRight, topLeft];
+    //console.log("projectFrustum down:", bottomLeft, bottomRight, topRight, topLeft, level);
+    return [bottomLeft, bottomRight, topRight, topLeft, level];
   }
-
   const [dist, attitude, orientation, xDiff, yDiff, zDiff] = viewVec;
   //console.log("projectFrustum viewVector:", dist, radToDeg(attitude), radToDeg(orientation));
 
@@ -644,8 +672,8 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   bottomRight[0] = -_eyePos[0] + bottomX * zCos + bottomY * zSin;
   bottomRight[1] = -_eyePos[1] + bottomX * zSin - bottomY * zCos;
 
-  //console.log("projectFrustum:", bottomLeft, bottomRight, topRight, topLeft);
-  return [bottomLeft, bottomRight, topRight, topLeft];
+  //console.log("projectFrustum:", bottomLeft, bottomRight, topRight, topLeft, level);
+  return [bottomLeft, bottomRight, topRight, topLeft, level];
 }
 
 // Render the scene
@@ -686,6 +714,7 @@ const drawScene = (gl) =>
 
   // Pass frustum prohection to ortho view
   let trapezoid = projectFrustum(_eyePos, _lookAt, zRot, _fov, _fov);
+  console.log("trapezoid:", trapezoid[4]);
   _parent.viewPerspTrapezoid(trapezoid);
   //console.log("drawScene trapezoid:", trapezoid);
 
@@ -718,3 +747,4 @@ const tick = () =>
 
 
 export {viewPersp};
+ {viewPersp};

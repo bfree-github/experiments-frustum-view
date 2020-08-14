@@ -29,7 +29,7 @@ var init = () => {
     domStats.orthoLevel.innerHTML = level;
   }
 
-  ctx.viewPerspTrapezoid = (trapezoid) => {
+  ctx.viewPerspTrapezoid = (trapezoid, level) => {
     //console.log("viewPerspTrapezoid");
     viewOrtho.setFrustum(trapezoid);
     /*

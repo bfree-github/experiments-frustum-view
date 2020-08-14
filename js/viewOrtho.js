@@ -8,8 +8,10 @@ var _ctx;
 var _width;
 var _height;
 var _maxSize = 1048576;
-var _maxLevel = 20;
-var _level = 15;
+var _maxLevels = 20;
+var _maxLevel = _maxLevels - 1;
+var _lastLevel = _maxLevel;
+var _level = 0;
 var _xPos = 0;
 var _yPos = 0;
 var _xPos = 0;
@@ -41,6 +43,7 @@ viewOrtho.init = (parent, canvasID, level) => {
     event.preventDefault();
     const wheel = event.deltaY / ((_parent.isFirefox) ? 12.0 : 400.0);
     //console.log("ortho wheel:", wheel);
+    /*
     _level += wheel;
     if (_level < 0) {
       _level = 0;
@@ -48,6 +51,7 @@ viewOrtho.init = (parent, canvasID, level) => {
       _level = 20;
     }
     viewOrtho.draw();
+    */
   }, {passive: false});
 
   var xRotMax = 60;
@@ -144,17 +148,20 @@ viewOrtho.getLevel = () => {
 }
 
 viewOrtho.setFrustum = (frustum) => {
+  _level = frustum[4];
   _frustum = frustum;
   viewOrtho.draw();
 }
 
 viewOrtho.draw = () => {
-  const level = parseInt(_level);
+  const level = _level;
   //console.log("draw level:", level);
-  _parent.viewOrthoLevel(level);
+  _parent.viewOrthoLevel(parseInt(level));
 
-  const gridSize = Math.pow(2, _maxLevel - level);
-  //console.log("grid size:", gridSize);
+  //const gridSize = Math.pow(2, _maxLevel - level);
+  const gridSize = Math.pow(2, level);
+  //const gridSize = level - parseInt(Math.pow(level, -2));
+  console.log("grid size:", gridSize);
 
   if (gridSize > _width || gridSize > _height) {
       _ctx.fillStyle = "#888";
@@ -173,7 +180,7 @@ viewOrtho.draw = () => {
     const yInc = _height/gridSize;
     _ctx.beginPath();
     _ctx.strokeStyle = "#000";
-    for (let i=0; i<=gridSize; i++) {
+    for (let i=0; i<gridSize; i++) {
       _ctx.moveTo(_xPos, _yPos+i*yInc);
       _ctx.lineTo(_xPos+_width, _yPos+i*yInc);
       _ctx.moveTo(_xPos+i*xInc, _yPos);
