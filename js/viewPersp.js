@@ -2,6 +2,17 @@
 
 // !!! Need to modularize this code
 
+const radToDeg = (radians) =>
+{
+  return radians * 180.0 / Math.PI;
+}
+
+const degToRad = (degrees) =>
+{
+  return degrees * Math.PI / 180.0;
+}
+
+// Internal values
 const viewPersp = {};
 var _parent;
 var _canvasID;
@@ -13,23 +24,26 @@ var _height;
 
 const _log2 = Math.log(2);
 
-const _near = 0.0000001;
-const _far = 100.0;
+const _groundScale = 1.0;
+const _near = 0.000001;
+const _far = 10.0;
 const _fov = 45;
 
-var _zRot = 0;
-var _xPos = 0;
-var _yPos = 0;
-var _zPos = -5;
+const _maxLevels = 20;
+const _maxLevel = _maxLevels-1;
+var _level = 0;
 
 const _distMax = vec3.length([1, 1, 0]);
 const _zPosMax = -_near;
-const _zPosMin = -4.8;
+const _zPosMin = -2.0*_groundScale/Math.tan(degToRad(_fov/2.0)); //-4.8;
 const _zPosDiff = _zPosMax - _zPosMin;
 
-const _maxLevels = 20;
-var _level = 0;
+var _xPos = 0;
+var _yPos = 0;
+var _zPos = 0.5 * _zPosMin / _groundScale;
+console.log("initial zPos:", _zPos, _zPosMin);
 
+var _zRot = 0;
 var _eyePos = [_xPos, _yPos, _zPos];
 var _lookAt = [0, 0, 0];
 var _upAxis = [0, 0, -1];
@@ -37,7 +51,7 @@ var _elevation = 0.5;
 var _elevationMax = 1.0;
 var _elevationMin = 0.0;
 
-
+// Initialize scene
 viewPersp.init = (parent, canvasID, level) => {
   //console.log("viewPersp init:", canvasID);
 
@@ -63,46 +77,21 @@ viewPersp.init = (parent, canvasID, level) => {
   _lookAt = elevateLookAt(_eyePos, _lookAt, _zRot, _fov, _elevation);
   drawScene(_gl);
 
-
+  // Handle wheel events
   _canvas.addEventListener("wheel", (event) => {
     event.preventDefault();
-    const delta = -event.deltaY / ((_parent.isFirefox) ? 12.0 : 400.0);
-    //console.log("persp wheel:", delta);
+    // Decelerate as we approach ground
+    const dScale = Math.pow(1.0 - _elevation, 1.125);
+    const delta = dScale * event.deltaY / ((_parent.isFirefox) ? 12.0 : 400.0);
+    console.log("persp wheel:", delta, dScale);
 
-    /*
-    _zPos += delta;
-    if (_zPos > _zPosMax)
-    {
-      _zPos = _zPosMax;
-    }
-    else if (_zPos < _zPosMin)
-    {
-      _zPos = _zPosMin;
-    }
-    _eyePos[2] = _zPos;
-    */
-
-    _elevation = clamp(_elevationMin, _elevationMax, _elevation - delta / 10.0);
-    //console.log("elevation:", _elevation);
+    _elevation = clamp(_elevationMin, _elevationMax, _elevation + delta);
+    console.log("elevation:", _elevation);
     _lookAt = elevateLookAt(_eyePos, _lookAt, _zRot, _fov, _elevation);
 
     drawScene(_gl);
   }, {passive: false});
 }
-
-/*
-viewPersp.setLevel = (level) => {
-  _level = level;
-  viewPersp.draw();
-}
-
-viewPersp.getLevel = () => {
-  return _level;
-}
-
-viewPersp.draw = () => {
-}
-*/
 
 // Initialize WebGL context
 const initGL = (canvas) => {
@@ -146,6 +135,7 @@ const initGL = (canvas) => {
   // Needed for Android
   canvas.style.touchAction = 'none';
 
+  // Handle pointer drag on canvas
   canvas.onpointerdown = (e) => {
     //console.log('pointer down');
     lastTime = new Date().getTime();
@@ -181,21 +171,24 @@ const initGL = (canvas) => {
     const dX = x - lastX;
     const dY = y - lastY;
 
+    // Ignore horizontal drag if vertical is greater
     if (Math.abs(dX) > Math.abs(dY))
     {
       // Horizontal drag
       //_xPos = lastX + x; // use if translating x
-      _zRot = lastRotZ - x * moveFactor; // turn camera about vertical axis // !!!
+
+      // turn camera about vertical axis
+      _zRot = lastRotZ - x * moveFactor;
     }
 
+    // Vertical drag
     //_yPos -= dY/100.0;
-    //console.log("yPos:", _yPos);
     //_eyePos[1] = _yPos;
     //_lookAt[1] = _yPos;
-    _lookAt[1] -= dY/100.0;
+    _lookAt[1] -= dY/100.0; // forward motion
+    //console.log("yPos:", _yPos);
 
-    /*
-    // Vertical drag
+    /* // Decided not to translate eye position
     //_yPos = lastY + y; // use if translating y
     const forwardDist = -dY/100.0;
     //console.log("forward dist:", forwardDist);
@@ -257,10 +250,10 @@ const initScene = (gl, fov) => {
   initShaders(gl);
   initBuffers(gl);
 
-  //gl.clearColor(0.0, 0.0, 0.0, 0.0);
-  //gl.clearColor(0.25, 0.25, 0.25, 1.0);
+  // Set background to orange - just cause
   gl.clearColor(1.0, 0.5, 0.0, 1.0);
 
+  // Draw on demand, rather than animate
   //tick();
 }
 
@@ -311,9 +304,8 @@ const getShader = (gl, id) =>
   return shader;
 }
 
-var shaderProgram;
-
 // Initialize shaders
+var shaderProgram;
 const initShaders = (gl) =>
 {
   let fragmentShader = getShader(gl, "shader-fs");
@@ -341,6 +333,7 @@ const initShaders = (gl) =>
   gl.useProgram(shaderProgram);
 }
 
+// Manage matrices
 var xformMatrix;
 var pMatrix;
 var mvMatrix;
@@ -379,12 +372,12 @@ const setMatrixUniforms = (shaderProgram) =>
   gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
 }
 
-
+// Define model
 const vertices = [
-  -1.0, -1.0,  0.0,
-   1.0, -1.0,  0.0,
-   1.0,  1.0,  0.0,
-  -1.0,  1.0,  0.0,
+  -_groundScale, -_groundScale,  0.0,
+   _groundScale, -_groundScale,  0.0,
+   _groundScale,  _groundScale,  0.0,
+  -_groundScale,  _groundScale,  0.0,
 ];
 const vertexElements = 3;
 const vertexCount = 4;
@@ -412,17 +405,21 @@ const initBuffers = (gl) =>
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 }
 
-
+// Local controls
 var z = -5.0;
 
 var xRot = 0;
 var yRot = 0;
 var zRot = 0;
 
+// No animation
+/*
 var xSpeed = 6;
 var ySpeed = 3;
 var zSpeed = 1;
+*/
 
+/*
 const radToDeg = (radians) =>
 {
   return radians * 180.0 / Math.PI;
@@ -432,6 +429,7 @@ const degToRad = (degrees) =>
 {
   return degrees * Math.PI / 180.0;
 }
+*/
 
 const signum = (value) =>
 {
@@ -443,6 +441,12 @@ const clamp = (min,max,a) =>
   return (a<min) ? min : ((a>max) ? max : a);
 }
 
+const log_2 = (value) =>
+{
+  return Math.log(value) / _log2;
+}
+
+// Determine view vector
 const viewVector = (eyePos, lookAt) =>
 {
   //console.log("viewVector:", eyePos[0], eyePos[1], lookAt[0], lookAt[1]);
@@ -461,13 +465,17 @@ const viewVector = (eyePos, lookAt) =>
   return [groundDist, attitude, orientation, xDiff, yDiff, zDiff];
 }
 
+// Set lookAt point
 const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
 {
-  _zPos = clamp(_zPosMin, _zPosMax, _zPosMin + elev * _zPosDiff);
+  const zPos = _zPosMin + elev * _zPosDiff;
+  _zPos = clamp(_zPosMin, 0, zPos);
+  //console.log("zPos:", eyePos[2], zPos, _zPos);
   _eyePos[2] = _zPos;
   return _lookAt;
 
-
+  // Decided to only change eye elevation
+  /*
   const viewVec = viewVector(eyePos, _lookAt);
   let dist, attitude, theta;
 
@@ -488,7 +496,7 @@ const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
 
   // Adjust _zPos acceleration curve: fast to slow
   //console.log("zDiff:", _zPosMin, _zPosMax, _zPosDiff);
-  const zPos = _zPosMin + _zPosDiff*(1.0-Math.pow(elev, 2.0));
+  zPos = _zPosMin + _zPosDiff*(1.0-Math.pow(elev, 2.0));
   //console.log("zPos:", _zPos, zPos);
   _eyePos[2] = zPos;
   _zPos = zPos;
@@ -503,7 +511,6 @@ const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
   const previousAttitude = attitude;
   attitude = Math.atan2(_zPos, dist);
   //console.log("attitude:", radToDeg(previousAttitude), radToDeg(attitude));
-
   //console.log("orientation:", theta);
 
   const result = [];
@@ -514,8 +521,10 @@ const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
   //console.log("elevateLookAt:", result[0], result[1], result[2]);
 
   return result;
+  */
 }
 
+// Change the lookAt point via rotation about vertical axis
 const yawLookAt = (eyePos, lookAt, zRot) =>
 {
   const viewVec = viewVector(eyePos, lookAt);
@@ -532,15 +541,21 @@ const yawLookAt = (eyePos, lookAt, zRot) =>
   return result;
 }
 
+// Determine the view frustum as projected on the ground
 const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
 {
   // Could do this with an inverse of the view matrix
-  // Doing it with trig instead to demonstrate how it works
+  // I'm doing it with trig instead to demonstrate how it works
   // Also faster with trig if you are only doing a few points
   ///
   // eyePoint and lookAt are vec3 x,y,z
   // zRot is the orientation around vertical axis
   // xFov and yFov are field of view for each dimension in degrees
+
+  // Calc level
+  const unitLevel = clamp(0, 1, 2.0*_zPos/_zPosMin);
+  const level = clamp(0, _maxLevels, (unitLevel <= 0) ? 0 : parseInt(log_2(1.0/unitLevel)));
+  console.log("frustum level:", _zPos, unitLevel, level);
 
   const topLeft = [];
   const topRight = [];
@@ -549,11 +564,6 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
 
   const xFovRad_2 = degToRad(xFov) / 2.0;
   const yFovRad_2 = degToRad(yFov) / 2.0;
-
-  // Calc level
-  const unitLevel = clamp(0, 1, 2.0 * _zPos / _zPosMin);
-  const level = (!unitLevel) ? 0 : parseInt(Math.log(1.0 / unitLevel) / _log2);
-  console.log("frustum level:", unitLevel, level);
 
   // Handle when camera facing straight down
   const viewVec = viewVector(eyePos, lookAt);
@@ -564,9 +574,9 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
     const y0 = height * Math.tan(yFovRad_2);
     const d = vec3.length([x0, y0, 0]);
     const a = Math.atan2(y0, x0) + zRot;
-    const x = _eyePos[0] + d * Math.cos(a); // !!!
-    const y = _eyePos[1] + d * Math.sin(a); // !!!
-    console.log("trap width:", x, unitLevel);
+    const x = _eyePos[0] + d * Math.cos(a);
+    const y = _eyePos[1] + d * Math.sin(a);
+    //console.log("trap width:", x, unitLevel);
 
     topRight[0] = lookAt[0] + x;
     topRight[1] = lookAt[1] + y;
@@ -583,15 +593,15 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   const [dist, attitude, orientation, xDiff, yDiff, zDiff] = viewVec;
   //console.log("projectFrustum viewVector:", dist, radToDeg(attitude), radToDeg(orientation));
 
-  const attitudeTop = attitude + yFovRad_2;
-  //console.log("top attitude:", radToDeg(attitudeTop));
+  var attitudeTop = attitude + yFovRad_2;
+  var attitudeBottom = attitude - yFovRad_2;
   if (attitudeTop >= 0)
   {
     // Need special handling when above horizon
-    // For now, just fail or throw
-    return undefined;
+    console.log("Looking above horizon; attitude too hight");
+    attitudeTop = degToRad(-0.0001);
+    attitudeBottom = attitudeTop - degToRad(yFov);
   }
-  const attitudeBottom = attitude - yFovRad_2;
   //console.log("attitudes:", radToDeg(attitudeTop), radToDeg(attitudeBottom));
 
   const height = eyePos[2];
@@ -664,7 +674,7 @@ const drawScene = (gl) =>
 
   // Pass frustum prohection to ortho view
   let trapezoid = projectFrustum(_eyePos, _lookAt, zRot, _fov, _fov);
-  console.log("trapezoid level:", trapezoid[4]);
+  //console.log("trapezoid level:", trapezoid[4]);
   _parent.viewPerspTrapezoid(trapezoid);
   //console.log("drawScene trapezoid:", trapezoid);
 
@@ -697,4 +707,4 @@ const tick = () =>
 
 
 export {viewPersp};
- {viewPersp};
+{viewPersp};
