@@ -160,6 +160,7 @@ viewOrtho.draw = () => {
 
   //const gridSize = Math.pow(2, _maxLevel - level);
   const gridSize = Math.pow(2, level);
+  //const gridSize = parseInt(level + 0.5);
   //const gridSize = level - parseInt(Math.pow(level, -2));
   console.log("grid size:", gridSize);
 

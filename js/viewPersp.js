@@ -11,7 +11,9 @@ var _gl;
 var _width;
 var _height;
 
-const _near = 0.00001;
+const _log2 = Math.log(2);
+
+const _near = 0.0000001;
 const _far = 100.0;
 const _fov = 45;
 
@@ -24,7 +26,6 @@ const _distMax = vec3.length([1, 1, 0]);
 const _zPosMax = -_near;
 const _zPosMin = -4.8;
 const _zPosDiff = _zPosMax - _zPosMin;
-const _zPosThresh = _zPosMin/2.0 - _zPosMax;
 
 const _maxLevels = 20;
 var _level = 0;
@@ -81,24 +82,9 @@ viewPersp.init = (parent, canvasID, level) => {
     _eyePos[2] = _zPos;
     */
 
-    ///*
-    const elev = _elevation - delta / 10.0;
-    if (elev > _elevationMax)
-    {
-      // !!! Bug - need to fix before allowing elev == _elevationMax;
-      _elevation = _elevationMax;
-    }
-    else if (elev < _elevationMin)
-    {
-      _elevation = _elevationMin;
-    }
-    else
-    {
-      _elevation = elev;
-    }
+    _elevation = clamp(_elevationMin, _elevationMax, _elevation - delta / 10.0);
     //console.log("elevation:", _elevation);
     _lookAt = elevateLookAt(_eyePos, _lookAt, _zRot, _fov, _elevation);
-    //*/
 
     drawScene(_gl);
   }, {passive: false});
@@ -452,6 +438,11 @@ const signum = (value) =>
   return (value === 0) ? 0 : (value < 0) ? -1 : 1;
 }
 
+const clamp = (min,max,a) =>
+{
+  return (a<min) ? min : ((a>max) ? max : a);
+}
+
 const viewVector = (eyePos, lookAt) =>
 {
   //console.log("viewVector:", eyePos[0], eyePos[1], lookAt[0], lookAt[1]);
@@ -472,32 +463,9 @@ const viewVector = (eyePos, lookAt) =>
 
 const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
 {
-  /*
+  _zPos = clamp(_zPosMin, _zPosMax, _zPosMin + elev * _zPosDiff);
   _eyePos[2] = _zPos;
   return _lookAt;
-  */
-
-  /*
-  // Just change _zPos
-  _zPos = _zPosMin + elev * _zPosDiff;
-  _eyePos[2] = _zPos;
-  console.log("persp zPos:", _zPos);
-  return _lookAt;
-  */
-
-  ///*
-  _zPos = _zPosMin + elev * _zPosDiff
-  if (_zPos > _zPosMax)
-  {
-    _zPos = _zPosMax;
-  }
-  else if (_zPos < _zPosMin)
-  {
-    _zPos = _zPosMin;
-  }
-  _eyePos[2] = _zPos;
-  return _lookAt;
-  //*/
 
 
   const viewVec = viewVector(eyePos, _lookAt);
@@ -583,33 +551,9 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   const yFovRad_2 = degToRad(yFov) / 2.0;
 
   // Calc level
-  //const zPos = (_zPos < _zPosThresh) ? _zPosThresh : _zPos;
-  var unitLevel = 2.0 * _zPos / _zPosMin;
-  //console.log("zPos:", _zPos, zPos, zPosThresh);
-  console.log("zPos:", _zPos);
-
-  //var unitLevel = (1.0 - zPos / _zPosMin) * 2.0 - 1.0;
-  if (unitLevel <= 0)
-  {
-    unitLevel = 0.0;
-  }
-  else if (unitLevel > 1.0)
-  {
-    unitLevel = 1.0;
-  }
-  /*
-  const level = parseInt(_maxLevels * unitLevel);
+  const unitLevel = clamp(0, 1, 2.0 * _zPos / _zPosMin);
+  const level = (!unitLevel) ? 0 : parseInt(Math.log(1.0 / unitLevel) / _log2);
   console.log("frustum level:", unitLevel, level);
-  */
-  /*
-  const level = parseInt(_maxLevels * (1.0 - unitLevel));
-  console.log("frustum level:", unitLevel, level);
-  */
-  ///*
-  const logLevel = Math.pow((1-unitLevel), 2);
-  const level = parseInt(_maxLevels * logLevel);
-  console.log("frustum level:", unitLevel, logLevel, level);
-  //*/
 
   // Handle when camera facing straight down
   const viewVec = viewVector(eyePos, lookAt);
@@ -622,6 +566,7 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
     const a = Math.atan2(y0, x0) + zRot;
     const x = _eyePos[0] + d * Math.cos(a); // !!!
     const y = _eyePos[1] + d * Math.sin(a); // !!!
+    console.log("trap width:", x, unitLevel);
 
     topRight[0] = lookAt[0] + x;
     topRight[1] = lookAt[1] + y;
