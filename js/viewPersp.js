@@ -11,16 +11,20 @@ var _gl;
 var _width;
 var _height;
 
+const _near = 0.00001;
+const _far = 100.0;
 const _fov = 45;
+
 var _zRot = 0;
 var _xPos = 0;
 var _yPos = 0;
 var _zPos = -5;
 
 const _distMax = vec3.length([1, 1, 0]);
-const _zPosMax = -0.1; //-_distMax;
+const _zPosMax = -_near;
 const _zPosMin = -4.8;
 const _zPosDiff = _zPosMax - _zPosMin;
+const _zPosThresh = _zPosMin/2.0 - _zPosMax;
 
 const _maxLevels = 20;
 var _level = 0;
@@ -262,7 +266,7 @@ const initScene = (gl, fov) => {
   // Setup viewport
   initMatrices();
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-  mat4.perspective(fov, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0, pMatrix);
+  mat4.perspective(fov, gl.viewportWidth / gl.viewportHeight, _near, _far, pMatrix);
 
   initShaders(gl);
   initBuffers(gl);
@@ -579,11 +583,12 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   const yFovRad_2 = degToRad(yFov) / 2.0;
 
   // Calc level
-  const zPosThresh = _zPosMin/2.0 - _zPosMax;
-  const zPos = (_zPos < zPosThresh) ? zPosThresh : _zPos;
+  //const zPos = (_zPos < _zPosThresh) ? _zPosThresh : _zPos;
+  var unitLevel = 2.0 * _zPos / _zPosMin;
   //console.log("zPos:", _zPos, zPos, zPosThresh);
-  console.log("zPos:", zPos);
-  var unitLevel = (1.0 - zPos / _zPosMin) * 2.0 - 1.0;
+  console.log("zPos:", _zPos);
+
+  //var unitLevel = (1.0 - zPos / _zPosMin) * 2.0 - 1.0;
   if (unitLevel <= 0)
   {
     unitLevel = 0.0;
@@ -601,7 +606,7 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   console.log("frustum level:", unitLevel, level);
   */
   ///*
-  const logLevel = Math.pow(unitLevel, 4.0);
+  const logLevel = Math.pow((1-unitLevel), 2);
   const level = parseInt(_maxLevels * logLevel);
   console.log("frustum level:", unitLevel, logLevel, level);
   //*/
@@ -714,7 +719,7 @@ const drawScene = (gl) =>
 
   // Pass frustum prohection to ortho view
   let trapezoid = projectFrustum(_eyePos, _lookAt, zRot, _fov, _fov);
-  console.log("trapezoid:", trapezoid[4]);
+  console.log("trapezoid level:", trapezoid[4]);
   _parent.viewPerspTrapezoid(trapezoid);
   //console.log("drawScene trapezoid:", trapezoid);
 
