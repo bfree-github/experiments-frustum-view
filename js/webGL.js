@@ -1,12 +1,9 @@
 /* Copyright 2020 Graphcomp - ALL RIGHTS RESERVED */
 
-// !!! Need to modularize this code
-
 import {utils} from "./utils.js";
-import {webGL} from "./webGL.js";
+const webGL = {};
 
 // Internal values
-const viewPersp = {};
 var _main;
 var _canvasID;
 var _canvas;
@@ -15,7 +12,7 @@ var _gl;
 var _width;
 var _height;
 
-//const _log2 = Math.log(2);
+const _log2 = Math.log(2);
 
 const _groundScale = 1.0;
 const _near = 0.000001;
@@ -45,15 +42,11 @@ var _elevationMax = 1.0;
 var _elevationMin = 0.0;
 
 // Initialize scene
-viewPersp.init = (main, canvasID, level) => {
+webGL.init = (main, canvasID, level) => {
   //console.log("viewPersp init:", canvasID);
 
   _main = main;
-  webGL.init(main, canvasID, level);
-
-  /*
-  _parent = parent;
-  //console.log("parent ctx:", _parent);
+  //console.log("parent ctx:", _main);
 
   if (level !== undefined) _level = level;
 
@@ -79,7 +72,7 @@ viewPersp.init = (main, canvasID, level) => {
     event.preventDefault();
     // Decelerate as we approach ground
     const dScale = Math.pow(1.0 - _elevation, 1.125);
-    const delta = dScale * event.deltaY / ((_parent.isFirefox) ? 12.0 : 400.0);
+    const delta = dScale * event.deltaY / ((_main.isFirefox) ? 12.0 : 400.0);
     console.log("persp wheel:", delta, dScale);
 
     _elevation = utils.clamp(_elevationMin, _elevationMax, _elevation + delta);
@@ -88,7 +81,6 @@ viewPersp.init = (main, canvasID, level) => {
 
     drawScene(_gl);
   }, {passive: false});
-  */
 }
 
 // Initialize WebGL context
@@ -647,7 +639,7 @@ const drawScene = (gl) =>
   // Pass frustum prohection to ortho view
   let trapezoid = projectFrustum(_eyePos, _lookAt, zRot, _fov, _fov);
   //console.log("trapezoid level:", trapezoid[4]);
-  _parent.viewPerspTrapezoid(trapezoid);
+  _main.viewPerspTrapezoid(trapezoid);
   //console.log("drawScene trapezoid:", trapezoid);
 
   //gl.drawElements(gl.TRIANGLES, vertexCount, gl.UNSIGNED_SHORT, 0);
@@ -678,4 +670,4 @@ const tick = () =>
 */
 
 
-export {viewPersp};
+export {webGL};

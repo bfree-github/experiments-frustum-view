@@ -39,19 +39,12 @@ viewOrtho.init = (parent, canvasID, level) => {
 
   _ctx = _canvas.getContext("2d");
 
+  /* // No navigation
   _canvas.addEventListener("wheel", (event) => {
     event.preventDefault();
     const wheel = event.deltaY / ((_parent.isFirefox) ? 12.0 : 400.0);
     //console.log("ortho wheel:", wheel);
-    /*
-    _level += wheel;
-    if (_level < 0) {
-      _level = 0;
-    } else if (_level > 20) {
-      _level = 20;
-    }
     viewOrtho.draw();
-    */
   }, {passive: false});
 
   var xRotMax = 60;
@@ -136,6 +129,7 @@ viewOrtho.init = (parent, canvasID, level) => {
     ySpeed = 0.0;
     duration = 0;
   }
+  */
 }
 
 viewOrtho.setLevel = (level) => {
