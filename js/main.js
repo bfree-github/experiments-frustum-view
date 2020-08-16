@@ -16,7 +16,7 @@ domStats.perspFrustum = $("#perspFrustum")[0];
 
 
 $(document).ready(() => {
-    init();
+  init();
 });
 
 var init = () => {
@@ -32,16 +32,9 @@ var init = () => {
   ctx.viewPerspTrapezoid = (trapezoid, level) => {
     //console.log("viewPerspTrapezoid");
     viewOrtho.setFrustum(trapezoid);
-    /*
-    domStats.perspFrustum.innerHTML =
-      "<br />"+trapezoid[0][0]+", "+trapezoid[0][1]+
-      "<br />"+trapezoid[1][0]+", "+trapezoid[1][1]+
-      "<br />"+trapezoid[2][0]+", "+trapezoid[2][1]+
-      "<br />"+trapezoid[3][0]+", "+trapezoid[3][1];
-    */
   }
 
-  viewOrtho.init(ctx, "canvasOrtho", 15);
-  viewPersp.init(ctx, "canvasPersp", 15);
+  viewOrtho.init(ctx, "canvasOrtho");
+  viewPersp.init(ctx, "canvasPersp");
   viewOrtho.draw();
 }

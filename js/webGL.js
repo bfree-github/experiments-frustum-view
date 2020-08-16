@@ -1,7 +1,10 @@
 /* Copyright 2020 Graphcomp - ALL RIGHTS RESERVED */
 
 import {utils} from "./utils.js";
+import {nav3D} from "./nav3D.js";
+import {shaders} from "./shaders.js";
 const webGL = {};
+
 
 // Internal values
 var _main;
@@ -12,43 +15,31 @@ var _gl;
 var _width;
 var _height;
 
-const _log2 = Math.log(2);
+var _model = {};
+var _view = {};
 
-const _groundScale = 1.0;
-const _near = 0.000001;
-const _far = 10.0;
-const _fov = 45;
+var _shaderProgram;
 
-const _maxLevels = 20;
-const _maxLevel = _maxLevels-1;
-var _level = 0;
+const _matrices =
+{
+  xformMatrix:null,
+  pMatrix:null,
+  mvMatrix:null,
+  mvMatrixStack:null
+}
 
-const _distMax = vec3.length([1, 1, 0]);
-const _zPosMax = -_near;
-const _zPosMin = -2.0*_groundScale/Math.tan(utils.degToRad(_fov/2.0)); //-4.8;
-const _zPosDiff = _zPosMax - _zPosMin;
 
-var _xPos = 0;
-var _yPos = 0;
-var _zPos = 0.5 * _zPosMin / _groundScale;
-console.log("initial zPos:", _zPos, _zPosMin);
-
-var _zRot = 0;
-var _eyePos = [_xPos, _yPos, _zPos];
-var _lookAt = [0, 0, 0];
-var _upAxis = [0, 0, -1];
-var _elevation = 0.5;
-var _elevationMax = 1.0;
-var _elevationMin = 0.0;
 
 // Initialize scene
-webGL.init = (main, canvasID, level) => {
-  //console.log("viewPersp init:", canvasID);
+webGL.init = (main, canvasID, model, view) => {
+  //console.log("webGL init");
 
+  // Cache parameters
   _main = main;
-  //console.log("parent ctx:", _main);
-
-  if (level !== undefined) _level = level;
+  webGL.main = _main;
+  webGL.methods = {};
+  webGL.methods.draw = draw;
+  webGL.methods.elevateLookAt = elevateLookAt;
 
   _canvasID = canvasID;
   _canvas = $("#"+canvasID)[0];
@@ -62,25 +53,34 @@ webGL.init = (main, canvasID, level) => {
   _canvas.height = _height;
   //console.log(_canvasID, _width+"x"+_height);
 
+  // Cache model data
+  _model = model;
+  //console.log("model:", model);
+
+  // Populate derivative view data
+  _view = view;
+  _view.maxLevel = _view.maxLevels-1;
+  _view.zPosDiff = _view.zPosMax - _view.zPosMin;
+  _view.distMax = vec3.length([_view.groundScale, _view.groundScale, 0]);
+  _view.eyePos = [_view.xPos, _view.yPos, _view.zPos];
+  _view.elevationMax = 1.0;
+  _view.elevationMin = 0.0;
+  _view.elevation = (_view.elevationMax + _view.elevationMin) / 2.0;
+  //console.log("view:", view);
+
+  // Initialize webGL
   _gl = initGL(_canvas);
-  initScene(_gl, _fov);
-  _lookAt = elevateLookAt(_eyePos, _lookAt, _zRot, _fov, _elevation);
-  drawScene(_gl);
+  //console.log(_gl);
+  initScene(_gl, _view.fov);
+  _view.lookAt = elevateLookAt(_view.eyePos, _view.lookAt,
+    _view.zRot, _view.fov, _view.elevation);
+  //console.log(_view.lookAt);
 
-  // Handle wheel events
-  _canvas.addEventListener("wheel", (event) => {
-    event.preventDefault();
-    // Decelerate as we approach ground
-    const dScale = Math.pow(1.0 - _elevation, 1.125);
-    const delta = dScale * event.deltaY / ((_main.isFirefox) ? 12.0 : 400.0);
-    console.log("persp wheel:", delta, dScale);
+  // Initialize navigation
+  nav3D.init(webGL, _canvas, _view);
+  //initNavigation();
 
-    _elevation = utils.clamp(_elevationMin, _elevationMax, _elevation + delta);
-    console.log("elevation:", _elevation);
-    _lookAt = elevateLookAt(_eyePos, _lookAt, _zRot, _fov, _elevation);
-
-    drawScene(_gl);
-  }, {passive: false});
+  draw();
 }
 
 // Initialize WebGL context
@@ -100,122 +100,6 @@ const initGL = (canvas) => {
   canvas.addEventListener("webglcontextrestored",
     restoreContext, {passive: false});
 
-  let xRotMax = 60;
-  let xRot = 0;
-  let yRot = 0;
-  let zRot = 0;
-
-  let xSpeed = 6 / 1000.0;
-  let ySpeed = 6 / 1000.0;
-  let zSpeed = 1 / 1000.0;
-
-  // Mouse drag
-  const moveFactor = 100 / canvas.width;
-  let mouseDown = false;
-  let duration;
-  let lastTime;
-  let startX;
-  let startY;
-  let lastX;
-  let lastY;
-  let lastRotZ;
-  //var posX = 0;
-  //var posY = 0;
-
-  // Needed for Android
-  canvas.style.touchAction = 'none';
-
-  // Handle pointer drag on canvas
-  canvas.onpointerdown = (e) => {
-    //console.log('pointer down');
-    lastTime = new Date().getTime();
-    startX = e.pageX;
-    startY = e.pageY;
-    lastX = 0;
-    lastY = 0;
-    lastRotZ = _zRot;
-    duration = 0;
-    mouseDown = true;
-  }
-
-  canvas.onpointerover = (e) => {
-    //console.log('pointer over');
-    if (mouseDown) return;
-    canvas.style.cursor = 'move';
-    //console.log(e);
-    let buttons = e.buttons;
-    if (!buttons) return;
-    canvas.onpointerdown(e);
-  }
-
-  canvas.onpointermove = (e) => {
-    //console.log('pointer move');
-    if (!mouseDown) return;
-    let now = new Date().getTime();
-    duration = now - lastTime;
-    lastTime = now;
-
-    // Determine movement from pointer down
-    const x = e.pageX - startX;
-    const y = e.pageY - startY;
-    const dX = x - lastX;
-    const dY = y - lastY;
-
-    // Ignore horizontal drag if vertical is greater
-    if (Math.abs(dX) > Math.abs(dY))
-    {
-      // Horizontal drag
-      //_xPos = lastX + x; // use if translating x
-
-      // turn camera about vertical axis
-      _zRot = lastRotZ - x * moveFactor;
-    }
-
-    // Vertical drag
-    //_yPos -= dY/100.0;
-    //_eyePos[1] = _yPos;
-    //_lookAt[1] = _yPos;
-    _lookAt[1] -= dY/100.0; // forward motion
-    //console.log("yPos:", _yPos);
-
-    /* // Decided not to translate eye position
-    //_yPos = lastY + y; // use if translating y
-    const forwardDist = -dY/100.0;
-    //console.log("forward dist:", forwardDist);
-
-    const zRot = utils.degToRad(_zRot-90);
-    const xDist = forwardDist * Math.cos(zRot);
-    const yDist = forwardDist * Math.sin(zRot);
-    _xPos += xDist;
-    _yPos += yDist;
-    _eyePos[0] = _xPos;
-    _eyePos[1] = _yPos;
-    _lookAt[0] += xDist;
-    _lookAt[1] += yDist;
-    //console.log("persp pos:", _xPos+"/"+_yPos);
-    */
-
-    lastX = x;
-    lastY = y
-    drawScene(_gl);
-  }
-
-  canvas.onpointerup = (e) => {
-    //console.log('pointer up');
-    mouseDown = false;
-    // Stop animation for a single click
-    // Otherwise calc rotation speed
-    ySpeed = (!duration) ? 0 : -0.1 * lastX / duration;
-  }
-
-  canvas.onpointerout = (e) => {
-    //console.log('pointer out');
-    if (!mouseDown) return;
-    mouseDown = false;
-    ySpeed = 0.0;
-    duration = 0;
-  }
-
   // Instantiate WebGL
   const gl = WebGLUtils.setupWebGL(canvas);
   if (gl)
@@ -233,22 +117,53 @@ const initGL = (canvas) => {
 
 const initScene = (gl, fov) => {
   // Setup viewport
-  initMatrices();
+  initMatrices(_matrices);
   gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
-  mat4.perspective(fov, gl.viewportWidth / gl.viewportHeight, _near, _far, pMatrix);
+  mat4.perspective(fov, gl.viewportWidth / gl.viewportHeight,
+   _view.near, _view.far, _matrices.pMatrix);
 
-  initShaders(gl);
-  initBuffers(gl);
+  _shaderProgram = initShaders(gl);
+  initBuffers(_shaderProgram);
 
   // Set background to orange - just cause
   gl.clearColor(1.0, 0.5, 0.0, 1.0);
+
+  // Set ground plane color
+  gl.uniform3f(_shaderProgram.colorUniform,1.0,0.0,0.0);
 
   // Draw on demand, rather than animate
   //tick();
 }
 
-
 // Compile shaders
+const loadShader = (gl, shaderScript) =>
+{
+  let shader;
+  if (shaderScript.type == "x-shader/x-fragment")
+  {
+    shader = gl.createShader(gl.FRAGMENT_SHADER);
+  }
+  else if (shaderScript.type == "x-shader/x-vertex")
+  {
+    shader = gl.createShader(gl.VERTEX_SHADER);
+  }
+  else
+  {
+      return null;
+  }
+
+  gl.shaderSource(shader, shaderScript.code);
+  gl.compileShader(shader);
+
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
+  {
+    alert(gl.getShaderInfoLog(shader));
+    return null;
+  }
+
+  return shader;
+}
+
 const getShader = (gl, id) =>
 {
   let shaderScript = document.getElementById(id);
@@ -295,119 +210,93 @@ const getShader = (gl, id) =>
 }
 
 // Initialize shaders
-var shaderProgram;
 const initShaders = (gl) =>
 {
-  let fragmentShader = getShader(gl, "shader-fs");
-  let vertexShader = getShader(gl, "shader-vs");
+  //let fragmentShader = getShader(gl, "shader-fs");
+  //let vertexShader = getShader(gl, "shader-vs");
+  let fragmentShader = loadShader(gl, shaders.fragment);
+  let vertexShader = loadShader(gl, shaders.vertex);
 
-  shaderProgram = gl.createProgram();
+  const shaderProgram = gl.createProgram();
   gl.attachShader(shaderProgram, vertexShader);
   gl.attachShader(shaderProgram, fragmentShader);
   gl.linkProgram(shaderProgram);
 
   if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS))
   {
-      alert("Unable to initialize shader");
+    alert("Unable to initialize shader");
   }
+
+  shaderProgram.gl = gl;
+  initShaderParameters(shaderProgram);
+
+  return shaderProgram;
+}
+
+// Init OpenGL uniforms, attributes, varyings
+const initShaderParameters = (shaderProgram) =>
+{
+  const gl = shaderProgram.gl;
   gl.useProgram(shaderProgram);
 
-  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+  shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram,
+    "aVertexPosition");
   gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
   shaderProgram.colorUniform = gl.getUniformLocation(shaderProgram, "uColor");
   shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
-
-  shaderProgram.gl = gl;
-  gl.useProgram(shaderProgram);
 }
 
-// Manage matrices
-var xformMatrix;
-var pMatrix;
-var mvMatrix;
-var mvMatrixStack;
-
-const initMatrices = () =>
+const initMatrices = (matrices) =>
 {
-  xformMatrix = mat4.create();
-  pMatrix = mat4.create();
-  mvMatrix = mat4.create();
-  mvMatrixStack = [];
+  matrices.xformMatrix = mat4.create();
+  matrices.pMatrix = mat4.create();
+  matrices.mvMatrix = mat4.create();
+  matrices.mvMatrixStack = [];
 }
 
 // Matrix utilities
-const mvPushMatrix = () =>
+const mvPushMatrix = (matrices) =>
 {
   let copy = mat4.create();
-  mat4.set(mvMatrix, copy);
-  mvMatrixStack.push(copy);
+  mat4.set(matrices.mvMatrix, copy);
+  matrices.mvMatrixStack.push(copy);
 }
 
-const mvPopMatrix = () =>
+const mvPopMatrix = (matrices) =>
 {
-  if (mvMatrixStack.length == 0)
+  if (matrices.mvMatrixStack.length == 0)
   {
     throw "Attempting to pop an empty mvMatrix stack!";
   }
-  mvMatrix = mvMatrixStack.pop();
+  matrices.mvMatrix = matrices.mvMatrixStack.pop();
 }
 
-const setMatrixUniforms = (shaderProgram) =>
+const setMatrixUniforms = (shaderProgram, matrices) =>
 {
   const gl = shaderProgram.gl;
 
-  gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix);
-  gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix);
+  gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, matrices.pMatrix);
+  gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, matrices.mvMatrix);
 }
-
-// Define model
-const vertices = [
-  -_groundScale, -_groundScale,  0.0,
-   _groundScale, -_groundScale,  0.0,
-   _groundScale,  _groundScale,  0.0,
-  -_groundScale,  _groundScale,  0.0,
-];
-const vertexElements = 3;
-const vertexCount = 4;
-
-const indices = [
-  0,  1,  2,
-  0,  2,  3,
-];
-const indexCount = 6;
-
-var vertexPositionBuffer;
-var indexBuffer;
 
 // Initialize VBOs
-const initBuffers = (gl) =>
+const initBuffers = (shaderProgram) =>
 {
-  vertexPositionBuffer = gl.createBuffer();
+  const gl = shaderProgram.gl;
+
+  const vertexPositionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, vertexPositionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, vertexElements, gl.FLOAT, false, 0, 0);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(_model.vertices), gl.STATIC_DRAW);
+  gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute,
+    _model.vertexElements, gl.FLOAT, false, 0, 0);
   gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
 
-  indexBuffer = gl.createBuffer();
+  const indexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(_model.indices), gl.STATIC_DRAW);
 }
-
-// Local controls
-var z = -5.0;
-
-var xRot = 0;
-var yRot = 0;
-var zRot = 0;
-
-// No animation
-/*
-var xSpeed = 6;
-var ySpeed = 3;
-var zSpeed = 1;
-*/
 
 // Determine view vector
 const viewVector = (eyePos, lookAt) =>
@@ -424,25 +313,26 @@ const viewVector = (eyePos, lookAt) =>
   const attitude = Math.atan2(zDiff, groundDist);
   const orientation = Math.atan2(yDiff, xDiff);
 
-  //console.log("viewVector results:", groundDist, utils.radToDeg(attitude), utils.radToDeg(orientation));
+  //console.log("viewVector results:", groundDist, utils.radToDeg(attitude),
+  //  utils.radToDeg(orientation));
   return [groundDist, attitude, orientation, xDiff, yDiff, zDiff];
 }
 
 // Set lookAt point
 const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
 {
-  const zPos = _zPosMin + elev * _zPosDiff;
-  _zPos = utils.clamp(_zPosMin, 0, zPos);
-  //console.log("zPos:", eyePos[2], zPos, _zPos);
-  _eyePos[2] = _zPos;
-  return _lookAt;
+  const zPos = _view.zPosMin + elev * _view.zPosDiff;
+  _view.zPos = utils.clamp(_view.zPosMin, 0, zPos);
+  //console.log("zPos:", eyePos[2], zPos, _view.zPos);
+  _view.eyePos[2] = _view.zPos;
+  return _view.lookAt;
 
   // Decided to only change eye elevation
   /*
-  const viewVec = viewVector(eyePos, _lookAt);
+  const viewVec = viewVector(eyePos, _view.lookAt);
   let dist, attitude, theta;
 
-  // View is straight down; use _zRot for orientation
+  // View is straight down; use _view.zRot for orientation
   if (!viewVec)
   {
     dist = 0;
@@ -457,22 +347,22 @@ const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
   // attitude must not go higher than yFov/2 below horizon
   // Ground dist should not go farther than half the diagonal of the map area (1.4)
 
-  // Adjust _zPos acceleration curve: fast to slow
-  //console.log("zDiff:", _zPosMin, _zPosMax, _zPosDiff);
-  zPos = _zPosMin + _zPosDiff*(1.0-Math.pow(elev, 2.0));
-  //console.log("zPos:", _zPos, zPos);
-  _eyePos[2] = zPos;
-  _zPos = zPos;
+  // Adjust _view.zPos acceleration curve: fast to slow
+  //console.log("zDiff:", _view.zPosMin, _view.zPosMax, _view.zPosDiff);
+  zPos = _view.zPosMin + _view.zPosDiff*(1.0-Math.pow(elev, 2.0));
+  //console.log("zPos:", _view.zPos, zPos);
+  _view.eyePos[2] = zPos;
+  _view.zPos = zPos;
 
   // Adjust ground dist acceleration curve: slow to fast
   const previousDist = dist;
-  dist = Math.pow(_distMax*(1.0-elev), 2.0);
+  dist = Math.pow(_view.distMax*(1.0-elev), 2.0);
   //console.log("elevation:", elev);
   //console.log("dist:", previousDist, dist);
 
   // Get new attitude
   const previousAttitude = attitude;
-  attitude = Math.atan2(_zPos, dist);
+  attitude = Math.atan2(_view.zPos, dist);
   //console.log("attitude:", utils.radToDeg(previousAttitude), utils.radToDeg(attitude));
   //console.log("orientation:", theta);
 
@@ -480,7 +370,8 @@ const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
   result[0] = (eyePos[0] + dist * Math.sin(-theta));
   result[1] = (eyePos[1] + dist * Math.cos(-theta));
   result[2] = lookAt[2];
-  //console.log("previous elevateLookAt:", _lookAt[0], _lookAt[1], _lookAt[2]);
+  //console.log("previous elevateLookAt:", _view.lookAt[0], _view.lookAt[1],
+  //  _view.lookAt[2]);
   //console.log("elevateLookAt:", result[0], result[1], result[2]);
 
   return result;
@@ -493,7 +384,8 @@ const yawLookAt = (eyePos, lookAt, zRot) =>
   const viewVec = viewVector(eyePos, lookAt);
   if (!viewVec) return undefined;
   const [dist, attitude, orientation] = viewVec;
-  //console.log("yawLookAt viewVector:", dist, utils.radToDeg(orientation), utils.radToDeg(zRot));
+  //console.log("yawLookAt viewVector:", dist, utils.radToDeg(orientation),
+  //  utils.radToDeg(zRot));
 
   const result = [];
   result[0] = (eyePos[0] + dist * Math.sin(-zRot));
@@ -516,10 +408,10 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   // xFov and yFov are field of view for each dimension in degrees
 
   // Calc level
-  const unitLevel = utils.clamp(0, 1, 2.0*_zPos/_zPosMin);
+  const unitLevel = utils.clamp(0, 1, 2.0*_view.zPos/_view.zPosMin);
   const scaledLevel = (unitLevel <= 0) ? 0 : parseInt(utils.log_2(1.0/unitLevel));
-  const level = utils.clamp(0, _maxLevel, scaledLevel);
-  console.log("frustum level:", _zPos, unitLevel, level);
+  const level = utils.clamp(0, _view.maxLevel, scaledLevel);
+  //console.log("frustum level:", _view.zPos, unitLevel, level);
 
   const topLeft = [];
   const topRight = [];
@@ -538,8 +430,8 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
     const y0 = height * Math.tan(yFovRad_2);
     const d = vec3.length([x0, y0, 0]);
     const a = Math.atan2(y0, x0) + zRot;
-    const x = _eyePos[0] + d * Math.cos(a);
-    const y = _eyePos[1] + d * Math.sin(a);
+    const x = _view.eyePos[0] + d * Math.cos(a);
+    const y = _view.eyePos[1] + d * Math.sin(a);
     //console.log("trap width:", x, unitLevel);
 
     topRight[0] = lookAt[0] + x;
@@ -551,11 +443,13 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
     bottomRight[0] = lookAt[0] - y;
     bottomRight[1] = lookAt[1] + x;
 
-    //console.log("projectFrustum down:", bottomLeft, bottomRight, topRight, topLeft, level);
+    //console.log("projectFrustum down:", bottomLeft, bottomRight,
+    //  topRight, topLeft, level);
     return [bottomLeft, bottomRight, topRight, topLeft, level];
   }
   const [dist, attitude, orientation, xDiff, yDiff, zDiff] = viewVec;
-  //console.log("projectFrustum viewVector:", dist, utils.radToDeg(attitude), utils.radToDeg(orientation));
+  //console.log("projectFrustum viewVector:", dist,
+  //  utils.radToDeg(attitude), utils.radToDeg(orientation));
 
   var attitudeTop = attitude + yFovRad_2;
   var attitudeBottom = attitude - yFovRad_2;
@@ -563,7 +457,7 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   {
     // Need special handling when above horizon
     console.log("Looking above horizon; attitude too hight");
-    attitudeTop = utils.degToRad(_zPosMax);
+    attitudeTop = utils.degToRad(_view.zPosMax);
     attitudeBottom = attitudeTop - utils.degToRad(yFov);
   }
   //console.log("attitudes:", utils.radToDeg(attitudeTop), utils.radToDeg(attitudeBottom));
@@ -584,68 +478,72 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   const zCos = Math.cos(zRot);
   const zSin = Math.sin(zRot);
 
-  topRight[0] = -_eyePos[0] + topX * zCos + topY * zSin;
-  topRight[1] = -_eyePos[1] + topX * zSin - topY * zCos;
+  topRight[0] = -_view.eyePos[0] + topX * zCos + topY * zSin;
+  topRight[1] = -_view.eyePos[1] + topX * zSin - topY * zCos;
 
-  topLeft[0] = -_eyePos[0] + -topX * zCos + topY * zSin;
-  topLeft[1] = -_eyePos[1] + -topX * zSin - topY * zCos;
+  topLeft[0] = -_view.eyePos[0] + -topX * zCos + topY * zSin;
+  topLeft[1] = -_view.eyePos[1] + -topX * zSin - topY * zCos;
 
-  bottomLeft[0] = -_eyePos[0] + -bottomX * zCos + bottomY * zSin;
-  bottomLeft[1] = -_eyePos[1] + -bottomX * zSin - bottomY * zCos;
+  bottomLeft[0] = -_view.eyePos[0] + -bottomX * zCos + bottomY * zSin;
+  bottomLeft[1] = -_view.eyePos[1] + -bottomX * zSin - bottomY * zCos;
 
-  bottomRight[0] = -_eyePos[0] + bottomX * zCos + bottomY * zSin;
-  bottomRight[1] = -_eyePos[1] + bottomX * zSin - bottomY * zCos;
+  bottomRight[0] = -_view.eyePos[0] + bottomX * zCos + bottomY * zSin;
+  bottomRight[1] = -_view.eyePos[1] + bottomX * zSin - bottomY * zCos;
 
   //console.log("projectFrustum:", bottomLeft, bottomRight, topRight, topLeft, level);
   return [bottomLeft, bottomRight, topRight, topLeft, level];
 }
 
-// Render the scene
-const drawScene = (gl) =>
+const draw = () =>
 {
-  // No need to save modelview matrix as we're only drawing when it changes
-  //mvPushMatrix();
+  // No need to save modelview matrix as we're only drawing frames when it changes
+  //mvPushMatrix(_matrices);
 
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  const zRot = utils.degToRad(-_zRot);
-  const viewVec = viewVector(_eyePos, _lookAt);
+  // Set up view matrices
+  const zRot = utils.degToRad(-_view.zRot);
+  const viewVec = viewVector(_view.eyePos, _view.lookAt);
   if (!viewVec)
   {
     // Camera looking straight down
-    //console.log("drawScene look down");
-    mat4.identity(mvMatrix);
-    mat4.rotate(mvMatrix, zRot, [0, 0, 1]);
-    mat4.translate(mvMatrix, _eyePos);
+    //console.log("draw look down");
+    mat4.identity(_matrices.mvMatrix);
+    mat4.rotate(_matrices.mvMatrix, zRot, [0, 0, 1]);
+    mat4.translate(_matrices.mvMatrix, _view.eyePos);
   }
   else
   {
-    //const attitude = Math.atan2(_eyePos[2], )
-    const yDist = _lookAt[1] - _eyePos[1];  // !!!
+    //const attitude = Math.atan2(_view.eyePos[2], )
+    const yDist = _view.lookAt[1] - _view.eyePos[1];
     //console.log("yDist:", yDist);
 
     // General camera view handling
-    //console.log("drawScene look out");
-    _lookAt = yawLookAt(_eyePos, _lookAt, zRot); // !!!
-    mat4.lookAt(_eyePos, _lookAt, _upAxis, mvMatrix);
+    //console.log("draw look out");
+    _view.lookAt = yawLookAt(_view.eyePos, _view.lookAt, zRot);
+    mat4.lookAt(_view.eyePos, _view.lookAt, _view.upAxis, _matrices.mvMatrix);
   }
+  //console.log("lookAt", _view.lookAt[0], _view.lookAt[1], _view.lookAt[2]);
+  //console.log("eyePos", _view.eyePos[0], _view.eyePos[1], _view.eyePos[2]);
 
-  //console.log("lookAt", _lookAt[0], _lookAt[1], _lookAt[2]);
-  //console.log("eyePos", _eyePos[0], _eyePos[1], _eyePos[2]);
+  // Update GPU matrices
+  setMatrixUniforms(_shaderProgram, _matrices);
 
-  setMatrixUniforms(shaderProgram);
-  gl.uniform3f(shaderProgram.colorUniform,1.0,0.0,0.0);
-
-  // Pass frustum prohection to ortho view
-  let trapezoid = projectFrustum(_eyePos, _lookAt, zRot, _fov, _fov);
+  // Pass frustum projection to ortho view
+  let trapezoid = projectFrustum(_view.eyePos, _view.lookAt, zRot,
+    _view.fov, _view.fov);
   //console.log("trapezoid level:", trapezoid[4]);
   _main.viewPerspTrapezoid(trapezoid);
   //console.log("drawScene trapezoid:", trapezoid);
 
-  //gl.drawElements(gl.TRIANGLES, vertexCount, gl.UNSIGNED_SHORT, 0);
-  gl.drawArrays(gl.TRIANGLE_FAN, 0, vertexCount);
+  drawScene(_gl);
 
-  //mvPopMatrix();
+  //mvPopMatrix(_matrices);
+}
+
+// Render the scene
+const drawScene = (gl) =>
+{
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.drawArrays(gl.TRIANGLE_FAN, 0, _model.vertexCount);
 }
 
 /*

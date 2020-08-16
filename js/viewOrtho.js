@@ -1,7 +1,9 @@
 /* Copyright 2020 Graphcomp - ALL RIGHTS RESERVED */
 
 var viewOrtho = {};
-var _parent;
+
+// Private values
+var _main;
 var _canvasID;
 var _canvas;
 var _ctx;
@@ -17,14 +19,12 @@ var _yPos = 0;
 var _xPos = 0;
 var _frustum = null;
 
-viewOrtho.init = (parent, canvasID, level) => {
+// Initialize ortho view
+viewOrtho.init = (main, canvasID) => {
   //console.log("viewOrtho init:", canvasID);
 
-  _parent = parent;
-  //console.log("parent ctx:", _parent);
-
-  if (level !== undefined) _level = level;
-
+  // Cache parameters
+  _main = main;
   _canvasID = canvasID;
   _canvas = $("#"+canvasID)[0];
 
@@ -37,12 +37,13 @@ viewOrtho.init = (parent, canvasID, level) => {
   _canvas.height = _height;
   //console.log(_canvasID, _width+"x"+_height);
 
+  // Get canvas drawing context
   _ctx = _canvas.getContext("2d");
 
   /* // No navigation
   _canvas.addEventListener("wheel", (event) => {
     event.preventDefault();
-    const wheel = event.deltaY / ((_parent.isFirefox) ? 12.0 : 400.0);
+    const wheel = event.deltaY / ((_main.isFirefox) ? 12.0 : 400.0);
     //console.log("ortho wheel:", wheel);
     viewOrtho.draw();
   }, {passive: false});
@@ -132,44 +133,48 @@ viewOrtho.init = (parent, canvasID, level) => {
   */
 }
 
+// Set map level
 viewOrtho.setLevel = (level) => {
   _level = level;
   viewOrtho.draw();
 }
 
+// Get map level
 viewOrtho.getLevel = () => {
   return _level;
 }
 
+// Set 3D frustum ground projection
 viewOrtho.setFrustum = (frustum) => {
   _level = frustum[4];
   _frustum = frustum;
   viewOrtho.draw();
 }
 
+// Draw the view
 viewOrtho.draw = () => {
+  // Report level back to main
   const level = _level;
   //console.log("draw level:", level);
-  _parent.viewOrthoLevel(parseInt(level));
+  _main.viewOrthoLevel(parseInt(level));
 
-  //const gridSize = Math.pow(2, _maxLevel - level);
+  // Calc grid size
   const gridSize = Math.pow(2, level);
-  //const gridSize = parseInt(level + 0.5);
-  //const gridSize = level - parseInt(Math.pow(level, -2));
-  console.log("grid size:", gridSize);
+  //console.log("grid size:", gridSize);
 
+  // Draw grid
   if (gridSize > _width || gridSize > _height) {
-      _ctx.fillStyle = "#888";
-      _ctx.fillRect(0, 0, _width, _height);
-      _ctx.fillStyle = "#000";
-      // Compensate for centered border
-      _ctx.fillRect(_xPos-0.5, _yPos-0.5, _width+1, _height+1);
-  } else {
+    // If the grid resolution is higher than canvas size, just fill
     _ctx.fillStyle = "#888";
     _ctx.fillRect(0, 0, _width, _height);
-    if (level === _maxLevel) {
-      //return;
-    }
+    _ctx.fillStyle = "#000";
+    // Compensate for centered border
+    _ctx.fillRect(_xPos-0.5, _yPos-0.5, _width+1, _height+1);
+  }
+  else
+  {
+    _ctx.fillStyle = "#888";
+    _ctx.fillRect(0, 0, _width, _height);
 
     const xInc = _width/gridSize;
     const yInc = _height/gridSize;
