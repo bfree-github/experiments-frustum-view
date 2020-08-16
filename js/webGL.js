@@ -1,5 +1,8 @@
 /* Copyright 2020 Graphcomp - ALL RIGHTS RESERVED */
 
+// !!! Needs to be further refactored and modularized
+
+
 import {utils} from "./utils.js";
 import {nav3D} from "./nav3D.js";
 import {shaders} from "./shaders.js";
@@ -30,7 +33,7 @@ const _matrices =
 
 
 
-// Initialize scene
+// Initialize webGL environment
 webGL.init = (main, canvasID, model, view) => {
   //console.log("webGL init");
 
@@ -61,17 +64,22 @@ webGL.init = (main, canvasID, model, view) => {
   _view = view;
   _view.maxLevel = _view.maxLevels-1;
   _view.zPosDiff = _view.zPosMax - _view.zPosMin;
+  //console.log("zPosDiff:", _view.zPosMin, _view.zPosMax, _view.zPosDiff);
   _view.distMax = vec3.length([_view.groundScale, _view.groundScale, 0]);
   _view.eyePos = [_view.xPos, _view.yPos, _view.zPos];
   _view.elevationMax = 1.0;
   _view.elevationMin = 0.0;
-  _view.elevation = (_view.elevationMax + _view.elevationMin) / 2.0;
-  //console.log("view:", view);
+  _view.elevationMid = (_view.elevationMax + _view.elevationMin) / 2.0;
+  _view.elevation = getElevation(_view.zPos);
+  _view.level = getLevel(_view.elevation);
+  console.log("initial elevation:", _view.elevation, _view.zPos);
 
   // Initialize webGL
   _gl = initGL(_canvas);
   //console.log(_gl);
   initScene(_gl, _view.fov);
+
+  // Initialize lookAt point
   _view.lookAt = elevateLookAt(_view.eyePos, _view.lookAt,
     _view.zRot, _view.fov, _view.elevation);
   //console.log(_view.lookAt);
@@ -80,7 +88,28 @@ webGL.init = (main, canvasID, model, view) => {
   nav3D.init(webGL, _canvas, _view);
   //initNavigation();
 
+  //console.log("webGL init draw");
   draw();
+}
+
+// zPos <-> elevation covertion
+const getElevation = (zPos) =>
+{
+  return zPos / _view.zPosMin;
+}
+
+const getZPos = (elevation) =>
+{
+  return elevation * _view.zPosMin;
+}
+
+const getLevel = (elevation) =>
+{
+  const unitLevel = utils.clamp(0, 1, 2.0 * elevation);
+  const scaledLevel = (unitLevel <= 0) ? 0 : parseInt(utils.log_2(1.0 / unitLevel));
+  const level = utils.clamp(0, _view.maxLevel, scaledLevel);
+  console.log("frustum level:", _view.elevation, _view.zPos, unitLevel, level);
+  return level;
 }
 
 // Initialize WebGL context
@@ -115,6 +144,7 @@ const initGL = (canvas) => {
   return gl;
 }
 
+// Initialize webGL scene
 const initScene = (gl, fov) => {
   // Setup viewport
   initMatrices(_matrices);
@@ -135,7 +165,7 @@ const initScene = (gl, fov) => {
   //tick();
 }
 
-// Compile shaders
+// Load shaders
 const loadShader = (gl, shaderScript) =>
 {
   let shader;
@@ -164,56 +194,9 @@ const loadShader = (gl, shaderScript) =>
   return shader;
 }
 
-const getShader = (gl, id) =>
-{
-  let shaderScript = document.getElementById(id);
-  if (!shaderScript)
-  {
-    return null;
-  }
-
-  let str = "";
-  let k = shaderScript.firstChild;
-  while (k)
-  {
-    if (k.nodeType == 3)
-    {
-      str += k.textContent;
-    }
-    k = k.nextSibling;
-  }
-
-  let shader;
-  if (shaderScript.type == "x-shader/x-fragment")
-  {
-    shader = gl.createShader(gl.FRAGMENT_SHADER);
-  }
-  else if (shaderScript.type == "x-shader/x-vertex")
-  {
-    shader = gl.createShader(gl.VERTEX_SHADER);
-  }
-  else
-  {
-      return null;
-  }
-
-  gl.shaderSource(shader, str);
-  gl.compileShader(shader);
-
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS))
-  {
-    alert(gl.getShaderInfoLog(shader));
-    return null;
-  }
-
-  return shader;
-}
-
 // Initialize shaders
 const initShaders = (gl) =>
 {
-  //let fragmentShader = getShader(gl, "shader-fs");
-  //let vertexShader = getShader(gl, "shader-vs");
   let fragmentShader = loadShader(gl, shaders.fragment);
   let vertexShader = loadShader(gl, shaders.vertex);
 
@@ -248,6 +231,7 @@ const initShaderParameters = (shaderProgram) =>
   shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
 }
 
+// Matrix utilities
 const initMatrices = (matrices) =>
 {
   matrices.xformMatrix = mat4.create();
@@ -256,7 +240,6 @@ const initMatrices = (matrices) =>
   matrices.mvMatrixStack = [];
 }
 
-// Matrix utilities
 const mvPushMatrix = (matrices) =>
 {
   let copy = mat4.create();
@@ -321,9 +304,9 @@ const viewVector = (eyePos, lookAt) =>
 // Set lookAt point
 const elevateLookAt = (eyePos, lookAt, zRot, yFov, elev) =>
 {
-  const zPos = _view.zPosMin + elev * _view.zPosDiff;
-  _view.zPos = utils.clamp(_view.zPosMin, 0, zPos);
-  //console.log("zPos:", eyePos[2], zPos, _view.zPos);
+  const zPos = getZPos(elev);
+  //console.log("elevateLookAt:", eyePos[2], _view.zPos, zPos, elev);
+  _view.zPos = zPos;
   _view.eyePos[2] = _view.zPos;
   return _view.lookAt;
 
@@ -408,11 +391,9 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   // xFov and yFov are field of view for each dimension in degrees
 
   // Calc level
-  const unitLevel = utils.clamp(0, 1, 2.0*_view.zPos/_view.zPosMin);
-  const scaledLevel = (unitLevel <= 0) ? 0 : parseInt(utils.log_2(1.0/unitLevel));
-  const level = utils.clamp(0, _view.maxLevel, scaledLevel);
-  //console.log("frustum level:", _view.zPos, unitLevel, level);
+  _view.level = getLevel(_view.elevation);
 
+  // Calc the frustum
   const topLeft = [];
   const topRight = [];
   const bottomLeft = [];
@@ -445,7 +426,7 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
 
     //console.log("projectFrustum down:", bottomLeft, bottomRight,
     //  topRight, topLeft, level);
-    return [bottomLeft, bottomRight, topRight, topLeft, level];
+    return [bottomLeft, bottomRight, topRight, topLeft, _view.level];
   }
   const [dist, attitude, orientation, xDiff, yDiff, zDiff] = viewVec;
   //console.log("projectFrustum viewVector:", dist,
@@ -491,7 +472,7 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
   bottomRight[1] = -_view.eyePos[1] + bottomX * zSin - bottomY * zCos;
 
   //console.log("projectFrustum:", bottomLeft, bottomRight, topRight, topLeft, level);
-  return [bottomLeft, bottomRight, topRight, topLeft, level];
+  return [bottomLeft, bottomRight, topRight, topLeft, _view.level];
 }
 
 const draw = () =>

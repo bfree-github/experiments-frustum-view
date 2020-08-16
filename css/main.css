@@ -2,10 +2,10 @@
 
 * {
   --font-monospace: 'Courier New','Lucida Console',monospace;
-  --font-sans-serif: 'OpenSans','Arial','Verdana',sans-serif;
-  /*--font-sans-serif: 'Lato','Arial','Verdana',sans-serif;*/
+  /*--font-sans-serif: 'OpenSans','Arial','Verdana',sans-serif;*/
+  --font-sans-serif: 'Lato','Arial','Verdana',sans-serif;
   --font-serif: 'Lora','Times New Roman','Georgia',serif;
-  /*font-family: var(--font-serif);*/
+  font-family: var(--font-sans-serif);
   font-weight: 400;
   color: #000;
   ::-webkit-font-smoothing: antialiased;
@@ -55,21 +55,18 @@ a:hover {
   color: #00F000;
 }
 h1 {
-  font-family: var(--font-sans-serif);
   font-weight: 300;
   font-size: 30px;
   margin: 0;
   padding: 0;
 }
 h2 {
-  font-family: var(--font-sans-serif);
   font-weight: bold;
   font-size: 24px;
   margin: 0;
   padding-bottom: 0.5em;
 }
 h3 {
-  font-family: var(--font-sans-serif);
   font-weight: bold;
   font-size: 18px;
   margin-block-start: 1em;

@@ -9,6 +9,7 @@ var _main;
 var _parent;
 var _canvas;
 var _view;
+var _browserFactor;
 
 // Import parent methods
 var _draw;
@@ -26,11 +27,10 @@ nav3D.init = (parent, canvas, view) => {
   _elevateLookAt = parent.methods.elevateLookAt;
   _canvas = canvas;
   _view = view;
+  _browserFactor = 1.0 / (_main.isFirefox ? 12.0 : 400.0);
 
   // Initialize navigation
   initNavigation();
-
-  _draw();
 }
 
 const initNavigation = () =>
@@ -38,18 +38,29 @@ const initNavigation = () =>
   // Handle wheel events
   _canvas.addEventListener("wheel", (event) => {
     event.preventDefault();
-    // Decelerate as we approach ground
-    const dScale = Math.pow(1.0 - _view.elevation, 1.125);
-    const delta = dScale * event.deltaY / ((_main.isFirefox) ? 12.0 : 400.0);
-    //console.log("persp wheel:", delta, dScale);
-
-    _view.elevation = utils.clamp(_view.elevationMin, _view.elevationMax, _view.elevation + delta);
     //console.log("elevation:", _view.elevation);
-    _view.lookAt = _elevateLookAt(_view.eyePos, _view.lookAt, _view.zRot, _view.fov, _view.elevation);
 
+    // Stop zooming once hit max level
+    if (event.deltaY > 0 && _view.level >= _view.maxLevel) return;
+    const dY = event.deltaY * _browserFactor / 20.0;
+
+    // Decelerate as we approach ground
+    const dScale = (_view.elevation >= _view.elevationMid) ? 1.0 :
+      Math.pow(_view.elevation / _view.elevationMid, 0.9);
+    const delta = dScale * dY;
+
+    _view.elevation = utils.clamp(_view.elevationMin, _view.elevationMax,
+      _view.elevation - delta);
+    console.log("persp wheel:", dScale, delta, _view.elevation);
+
+    _view.lookAt = _elevateLookAt(_view.eyePos, _view.lookAt,
+      _view.zRot, _view.fov, _view.elevation);
+
+    //console.log("wheel draw");
     _draw();
   }, {passive: false});
 
+  /*
   let xRotMax = 60;
   let xRot = 0;
   let yRot = 0;
@@ -58,6 +69,7 @@ const initNavigation = () =>
   let xSpeed = 6 / 1000.0;
   let ySpeed = 6 / 1000.0;
   let zSpeed = 1 / 1000.0;
+  */
 
   // Mouse drag
   const moveFactor = 100 / _canvas.width;
@@ -119,6 +131,7 @@ const initNavigation = () =>
 
       // turn camera about vertical axis
       _view.zRot = lastRotZ - x * moveFactor;
+      //console.log("zRot:", _view.zRot);
     }
 
     // Vertical drag
@@ -147,6 +160,8 @@ const initNavigation = () =>
 
     lastX = x;
     lastY = y
+
+    //console.log("nav3D move draw");
     _draw();
   }
 
@@ -155,14 +170,14 @@ const initNavigation = () =>
     mouseDown = false;
     // Stop animation for a single click
     // Otherwise calc rotation speed
-    ySpeed = (!duration) ? 0 : -0.1 * lastX / duration;
+    //ySpeed = (!duration) ? 0 : -0.1 * lastX / duration;
   }
 
   _canvas.onpointerout = (e) => {
     //console.log('pointer out');
     if (!mouseDown) return;
     mouseDown = false;
-    ySpeed = 0.0;
+    //ySpeed = 0.0;
     duration = 0;
   }
 }

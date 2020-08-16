@@ -20,11 +20,12 @@ view.fov = 45;
 view.maxLevels = 20;
 view.level = 0;
 
-view.zPosMax = view.near;
-view.zPosMin = -2.0*view.groundScale/Math.tan(utils.degToRad(view.fov/2.0));
+view.zPosMax = -view.near;
+view.zPosMin = -2.0 * view.groundScale / Math.tan(utils.degToRad(view.fov/2.0));
 view.xPos = 0;
 view.yPos = 0;
 view.zPos = 0.5 * view.zPosMin / view.groundScale;
+console.log("initial zPos:", view.zPos, view.zPosMin, view.zPosMax);
 
 view.zRot = 0;
 view.lookAt = [0, 0, 0];
