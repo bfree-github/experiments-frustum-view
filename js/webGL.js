@@ -72,7 +72,7 @@ webGL.init = (main, canvasID, model, view) => {
   _view.elevationMid = (_view.elevationMax + _view.elevationMin) / 2.0;
   _view.elevation = getElevation(_view.zPos);
   _view.level = getLevel(_view.elevation);
-  console.log("initial elevation:", _view.elevation, _view.zPos);
+  //console.log("initial elevation:", _view.elevation, _view.zPos);
 
   // Initialize webGL
   _gl = initGL(_canvas);
@@ -108,7 +108,7 @@ const getLevel = (elevation) =>
   const unitLevel = utils.clamp(0, 1, 2.0 * elevation);
   const scaledLevel = (unitLevel <= 0) ? 0 : parseInt(utils.log_2(1.0 / unitLevel));
   const level = utils.clamp(0, _view.maxLevel, scaledLevel);
-  console.log("frustum level:", _view.elevation, _view.zPos, unitLevel, level);
+  //console.log("frustum level:", _view.elevation, _view.zPos, unitLevel, level);
   return level;
 }
 

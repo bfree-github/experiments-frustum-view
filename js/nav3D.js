@@ -52,7 +52,7 @@ const initNavigation = () =>
 
     _view.elevation = utils.clamp(_view.elevationMin, _view.elevationMax,
       _view.elevation - delta);
-    console.log("persp wheel:", dY, dScale, delta, _view.elevation);
+    //console.log("persp wheel:", dY, dScale, delta, _view.elevation);
 
     _view.lookAt = _elevateLookAt(_view.eyePos, _view.lookAt,
       _view.zRot, _view.fov, _view.elevation);
