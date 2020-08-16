@@ -10,6 +10,7 @@ var _parent;
 var _canvas;
 var _view;
 var _browserFactor;
+var _scrollMax;
 
 // Import parent methods
 var _draw;
@@ -44,14 +45,14 @@ const initNavigation = () =>
     if (event.deltaY > 0 && _view.level >= _view.maxLevel) return;
     const dY = event.deltaY * _browserFactor / 20.0;
 
-    // Decelerate as we approach ground
+    // Accelerate towards max level
     const dScale = (_view.elevation >= _view.elevationMid) ? 1.0 :
-      Math.pow(_view.elevation / _view.elevationMid, 0.9);
+      Math.pow(_view.elevation / _view.elevationMid, 0.8);
     const delta = dScale * dY;
 
     _view.elevation = utils.clamp(_view.elevationMin, _view.elevationMax,
       _view.elevation - delta);
-    console.log("persp wheel:", dScale, delta, _view.elevation);
+    console.log("persp wheel:", dY, dScale, delta, _view.elevation);
 
     _view.lookAt = _elevateLookAt(_view.eyePos, _view.lookAt,
       _view.zRot, _view.fov, _view.elevation);
@@ -61,6 +62,7 @@ const initNavigation = () =>
   }, {passive: false});
 
   /*
+  // Animation values
   let xRotMax = 60;
   let xRot = 0;
   let yRot = 0;
