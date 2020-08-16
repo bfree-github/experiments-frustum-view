@@ -24,7 +24,11 @@
   </head>
 
   <body>
-    <center><h2>View-Frustum Exercise</h2></center>
+    <center>
+      <h2>View-Frustum Exercise</h2>
+      Source is on <a href="https://github.com/bfree-github/experiments-frustum-view" target="bfree_source">GitHub</a> -
+      also visit Bob Free's <a href="http://graphcomp.net/bfree" target="bfree">portfolio</a>
+    </center>
     <p />&nbsp;<p />
     <table>
       <tr>
@@ -49,5 +53,20 @@
         </td>
       </tr>
     </table>
+    <p />&nbsp;<p />
+    At the moment, only the left 3D View supports user navigation:
+    <ul>
+      <li />Use your thumb-wheel (I can add tablet pinch support later) to<br />
+        zoom in/out through various map levels from O (top) to 19 (bottom).
+      <li />Drag left/right to turn/yaw your view (swivel your head left/right).
+      <li />Drag up/down to tilt your view (swivel your head up down).
+      <li />Currently, the eye horizontal position remains stationary over the map origin.
+    </ul>
+    <p />&nbsp;<p />
+    The right Overhead View is a positionally static 2D orthogonal view looking down over the center of the map.
+    <p />
+    A green trapezoid appears that depicts the 3D View's frustum projection on the ground. Drag your mouse in the 3D View to see the trapezoid change in reverse of the 3D camera view.
+    <p />
+    Grids appear depicting the map level based on eye position height.  Use your thumb-wheel in the 3D View to see the grid levels change.  You will note that the trapezoid elongates as your eye tilts more towards the horizon, as you approach ground level.
   </body>
 </html>
