@@ -1,6 +1,7 @@
 /* Copyright 2020 Graphcomp - ALL RIGHTS RESERVED */
 
-* {
+*
+{
   --font-monospace: 'Courier New','Lucida Console',monospace;
   --font-body: 'OpenSans','Arial','Verdana',sans-serif;
   --font-headings: 'Lato','Arial','Verdana',sans-serif;
@@ -13,27 +14,37 @@
   margin: 0;
   padding: 0;
 }
-html {
+html
+{
   background: #CCC;
   font-size: 16px;
   width: 100%;
   height: 100%;
 }
-body {
+body
+{
   width: 90%;
   height: 90%;
   margin: 2.5% 5% 2% 5%;
 }
-hr {
+hr
+{
   border: 0.25px solid #FFFFFF;
 }
-p {
+p
+{
   margin-bottom: 16px;
 }
-li {
+ul
+{
+  padding-left: 2.5%;
+}
+li
+{
   margin-bottom: 8px;
 }
-table, th, td {
+table, th, td
+{
   width: 100%;
   border-collapse: collapse;
   border-spacing: 0;
@@ -41,34 +52,41 @@ table, th, td {
   padding: 0;
   vertical-align: top;
 }
-a {
+a
+{
   text-decoration: none;
 }
-a:link {
+a:link
+{
   cursor: pointer;
   color: #777;
 }
-a:visited {
+a:visited
+{
   color: #777;
 }
-a:hover {
+a:hover
+{
   color: #EEE;
 }
-h1 {
+h1
+{
   font-family: var(--font-headings);
   font-weight: 300;
   font-size: 30px;
   margin: 0;
   padding: 0;
 }
-h2 {
+h2
+{
   font-family: var(--font-headings);
   font-weight: bold;
   font-size: 24px;
   margin: 0;
   padding-bottom: 0.5em;
 }
-h3 {
+h3
+{
   font-family: var(--font-headings);
   font-weight: bold;
   font-size: 18px;
@@ -76,16 +94,20 @@ h3 {
   margin-block-end: 0.5em;
 }
 
-.remainder {
+.remainder
+{
   width: 100%;
 }
-.pad {
+.pad
+{
   width: 10%;
 }
-.canvas {
+.canvas
+{
   width: 256px;
 }
-canvas {
+canvas
+{
   background: #CCC;
   border:none;
   width: 256px;
@@ -93,23 +115,29 @@ canvas {
 }
 
 
-.center {
+.center
+{
   text-align: center;
 }
-.center > div, .center > table {
+.center > div, .center > table
+{
   margin-left: auto;
   margin-right: auto;
 }
 
-.not-allowed {
+.not-allowed
+{
   cursor: not-allowed;
 }
-.drag-vertical {
+.drag-vertical
+{
   cursor: ns-resize ;
 }
-.drag-horizontal {
+.drag-horizontal
+{
   cursor: ew-resize ;
 }
-.drag-both {
+.drag-both
+{
   cursor: move ;
 }

@@ -16,11 +16,11 @@ var _lastLevel = _maxLevel;
 var _level = 0;
 var _xPos = 0;
 var _yPos = 0;
-var _xPos = 0;
 var _frustum = null;
 
 // Initialize ortho view
-viewOrtho.init = (main, canvasID) => {
+viewOrtho.init = (main, canvasID) =>
+{
   //console.log("viewOrtho init:", canvasID);
 
   // Cache parameters
@@ -41,7 +41,8 @@ viewOrtho.init = (main, canvasID) => {
   _ctx = _canvas.getContext("2d");
 
   /* // No navigation
-  _canvas.addEventListener("wheel", (event) => {
+  _canvas.addEventListener("wheel", (event) =>
+  {
     event.preventDefault();
     const wheel = event.deltaY / ((_main.isFirefox) ? 12.0 : 400.0);
     //console.log("ortho wheel:", wheel);
@@ -72,7 +73,8 @@ viewOrtho.init = (main, canvasID) => {
   // Needed for Android
   _canvas.style.touchAction = 'none';
 
-  _canvas.onpointerdown = (e) => {
+  _canvas.onpointerdown = (e) =>
+  {
     //console.log('pointer down');
     lastTime = new Date().getTime();
     startX = e.pageX;
@@ -83,7 +85,8 @@ viewOrtho.init = (main, canvasID) => {
     mouseDown = true;
   }
 
-  _canvas.onpointerover = (e) => {
+  _canvas.onpointerover = (e) =>
+  {
     //console.log('pointer over');
     if (mouseDown) return;
     _canvas.style.cursor = 'move';
@@ -93,7 +96,8 @@ viewOrtho.init = (main, canvasID) => {
     _canvas.onpointerdown(e);
   }
 
-  _canvas.onpointermove = (e) => {
+  _canvas.onpointermove = (e) =>
+  {
     //console.log('pointer move');
     if (!mouseDown) return;
     var now = new Date().getTime();
@@ -108,14 +112,16 @@ viewOrtho.init = (main, canvasID) => {
     //_yPos = lastY + y;
     //xRot -= y * moveFactor;
     //xRot %= 360.0;
-    //if (Math.abs(xRot) > xRotMax) {
+    //if (Math.abs(xRot) > xRotMax)
+    //{
     //  xRot = Math.sign(xRot) * xRotMax;
     //}
     //console.log("ortho pos:", _xPos+"/"+_yPos);
     //viewOrtho.draw();
   }
 
-  _canvas.onpointerup = (e) => {
+  _canvas.onpointerup = (e) =>
+  {
     //console.log('pointer up');
     mouseDown = false;
     // Stop animation for a single click
@@ -123,7 +129,8 @@ viewOrtho.init = (main, canvasID) => {
     ySpeed = (!duration) ? 0 : -0.1 * lastX / duration;
   }
 
-  _canvas.onpointerout = (e) => {
+  _canvas.onpointerout = (e) =>
+  {
     //console.log('pointer out');
     if (!mouseDown) return;
     mouseDown = false;
@@ -134,25 +141,29 @@ viewOrtho.init = (main, canvasID) => {
 }
 
 // Set map level
-viewOrtho.setLevel = (level) => {
+viewOrtho.setLevel = (level) =>
+{
   _level = level;
   viewOrtho.draw();
 }
 
 // Get map level
-viewOrtho.getLevel = () => {
+viewOrtho.getLevel = () =>
+{
   return _level;
 }
 
 // Set 3D frustum ground projection
-viewOrtho.setFrustum = (frustum) => {
+viewOrtho.setFrustum = (frustum) =>
+{
   _level = frustum[4];
   _frustum = frustum;
   viewOrtho.draw();
 }
 
 // Draw the view
-viewOrtho.draw = () => {
+viewOrtho.draw = () =>
+{
   // Report level back to main
   const level = _level;
   //console.log("draw level:", level);
@@ -163,7 +174,8 @@ viewOrtho.draw = () => {
   //console.log("grid size:", gridSize);
 
   // Draw grid
-  if (gridSize > _width || gridSize > _height) {
+  if (gridSize > _width || gridSize > _height)
+  {
     // If the grid resolution is higher than canvas size, just fill
     _ctx.fillStyle = "#888";
     _ctx.fillRect(0, 0, _width, _height);
@@ -204,4 +216,3 @@ viewOrtho.draw = () => {
 }
 
 export {viewOrtho};
-

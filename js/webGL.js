@@ -3,9 +3,11 @@
 // !!! Needs to be further refactored and modularized
 
 
-import {utils} from "./utils.js";
-import {nav3D} from "./nav3D.js";
-import {shaders} from "./shaders.js";
+import {utils}    from "./utils.js";
+import {shaders}  from "./shaders.js";
+import {nav3D}    from "./nav3D.js";
+import {tiling}    from "./tiling.js";
+
 const webGL = {};
 
 
@@ -20,8 +22,10 @@ var _height;
 
 var _model = {};
 var _view = {};
+var _tileVertices = [];
 
 var _shaderProgram;
+var _dirty = true;
 
 const _matrices =
 {
@@ -73,6 +77,12 @@ webGL.init = (main, canvasID, model, view) => {
   _view.elevation = getElevation(_view.zPos);
   _view.level = getLevel(_view.elevation);
   //console.log("initial elevation:", _view.elevation, _view.zPos);
+
+  // Initialize tiling engine
+  const tilingCtx = {w:_model.vertices[3]*2.0, h:_model.vertices[6]*2};
+  //console.log("tiling ctx:", tilingCtx);
+  tilingCtx.methods = {drawTile};
+  tiling.init(tilingCtx);
 
   // Initialize webGL
   _gl = initGL(_canvas);
@@ -417,15 +427,14 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
 
     topRight[0] = lookAt[0] + x;
     topRight[1] = lookAt[1] + y;
-    topLeft[0] = lookAt[0] + y;
-    topLeft[1] = lookAt[1] - x;
+    topLeft[0] = lookAt[0] - x;
+    topLeft[1] = lookAt[1] + y;
     bottomLeft[0] = lookAt[0] - x;
     bottomLeft[1] = lookAt[1] - y;
-    bottomRight[0] = lookAt[0] - y;
-    bottomRight[1] = lookAt[1] + x;
+    bottomRight[0] = lookAt[0] + x;
+    bottomRight[1] = lookAt[1] - y;
 
-    //console.log("projectFrustum down:", bottomLeft, bottomRight,
-    //  topRight, topLeft, level);
+    //console.log("projectFrustum down:", bottomLeft, bottomRight, topRight, topLeft, _view.level);
     return [bottomLeft, bottomRight, topRight, topLeft, _view.level];
   }
   const [dist, attitude, orientation, xDiff, yDiff, zDiff] = viewVec;
@@ -477,6 +486,9 @@ const projectFrustum = (eyePos, lookAt, zRot, xFov, yFov) =>
 
 const draw = () =>
 {
+  // Stop progressive tiling
+  tiling.stop();
+
   // No need to save modelview matrix as we're only drawing frames when it changes
   //mvPushMatrix(_matrices);
 
@@ -515,15 +527,45 @@ const draw = () =>
   _main.viewPerspTrapezoid(trapezoid);
   //console.log("drawScene trapezoid:", trapezoid);
 
+  // Render the ground plane
   drawScene(_gl);
-
   //mvPopMatrix(_matrices);
+
+  // Fill trapezoid with tiles
+  //console.log("fillTrapezoid");
+  tiling.fillTrapezoid(trapezoid, "least");
 }
 
 // Render the scene
 const drawScene = (gl) =>
 {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  if (_dirty)
+  {
+    _dirty = false;
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(_model.vertices), gl.STATIC_DRAW);
+  }
+  gl.drawArrays(gl.TRIANGLE_FAN, 0, _model.vertexCount);
+}
+
+// Draw tile
+const drawTile = (gl, tile, color) =>
+{
+  console.log("tile:", rect, color);
+}
+const drawRect = (gl, rect, color) =>
+{
+  console.log("rect:", rect, color);
+  _dirty = true;
+  const vertices =
+  [
+    -_view.groundScale, -_view.groundScale,  0.0,
+     _view.groundScale, -_view.groundScale,  0.0,
+     _view.groundScale,  _view.groundScale,  0.0,
+    -_view.groundScale,  _view.groundScale,  0.0,
+  ];
+
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
   gl.drawArrays(gl.TRIANGLE_FAN, 0, _model.vertexCount);
 }
 

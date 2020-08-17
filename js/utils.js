@@ -18,6 +18,16 @@ utils.signum = (value) =>
   return (value === 0) ? 0 : (value < 0) ? -1 : 1;
 }
 
+utils.min = (a, b) =>
+{
+  return (a<=b) ? a : b;
+}
+
+utils.max = (a, b) =>
+{
+  return (a>=b) ? a : b;
+}
+
 utils.clamp = (min,max,a) =>
 {
   return (a<min) ? min : ((a>max) ? max : a);
